@@ -1,0 +1,585 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Task Tracker</title>
+    <style>
+      :root {
+        color-scheme: light;
+        --bg: #f4f7fb;
+        --panel: #ffffff;
+        --border: #d9e2ec;
+        --text: #17212b;
+        --muted: #64748b;
+        --todo: #dbeafe;
+        --todo-text: #1d4ed8;
+        --inprogress: #fef3c7;
+        --inprogress-text: #b45309;
+        --done: #dcfce7;
+        --done-text: #15803d;
+        --accent: #2563eb;
+      }
+
+      * { box-sizing: border-box; }
+
+      body {
+        margin: 0;
+        font-family: Inter, Arial, sans-serif;
+        background: var(--bg);
+        color: var(--text);
+      }
+
+      .page {
+        max-width: 1200px;
+        margin: 0 auto;
+        padding: 24px;
+      }
+
+      .header {
+        margin-bottom: 24px;
+      }
+
+      .header h1 {
+        margin: 0 0 8px;
+        font-size: 2rem;
+      }
+
+      .header p {
+        margin: 0;
+        color: var(--muted);
+      }
+
+      .board {
+        display: grid;
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+        gap: 16px;
+      }
+
+      .column {
+        background: var(--panel);
+        border: 1px solid var(--border);
+        border-radius: 12px;
+        padding: 16px;
+        min-height: 320px;
+      }
+
+      .column-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 12px;
+      }
+
+      .column-title {
+        font-size: 1rem;
+        font-weight: 700;
+      }
+
+      .column-badge {
+        font-size: 0.8rem;
+        padding: 4px 8px;
+        border-radius: 999px;
+        font-weight: 600;
+      }
+
+      .column[data-status="ToDo"] .column-badge {
+        background: var(--todo);
+        color: var(--todo-text);
+      }
+
+      .column[data-status="InProgress"] .column-badge {
+        background: var(--inprogress);
+        color: var(--inprogress-text);
+      }
+
+      .column[data-status="Done"] .column-badge {
+        background: var(--done);
+        color: var(--done-text);
+      }
+
+      .card-list {
+        display: flex;
+        flex-direction: column;
+        gap: 12px;
+      }
+
+      .card {
+        border: 1px solid var(--border);
+        border-radius: 10px;
+        padding: 12px;
+        background: #fcfdff;
+        cursor: grab;
+      }
+
+      .card.dragging {
+        opacity: 0.65;
+        transform: rotate(2deg);
+      }
+
+      .column.drag-over {
+        outline: 2px dashed var(--accent);
+        outline-offset: 4px;
+        background: #f8fbff;
+      }
+
+      .card-title {
+        font-weight: 700;
+        margin-bottom: 6px;
+      }
+
+      .card-description {
+        color: var(--muted);
+        margin-bottom: 10px;
+        font-size: 0.95rem;
+      }
+
+      .meta {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        gap: 8px;
+        margin-bottom: 10px;
+        font-size: 0.9rem;
+      }
+
+      .priority {
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 0.03em;
+        font-size: 0.75rem;
+      }
+
+      .priority.high { color: #b91c1c; }
+      .priority.medium { color: #b45309; }
+      .priority.low { color: #15803d; }
+
+      .assignee {
+        color: var(--muted);
+      }
+
+      .card-actions {
+        display: flex;
+        justify-content: flex-end;
+      }
+
+      .edit-btn {
+        border: 1px solid var(--accent);
+        background: white;
+        color: var(--accent);
+        border-radius: 6px;
+        padding: 6px 10px;
+        font-size: 0.9rem;
+        cursor: pointer;
+      }
+
+      .edit-btn:hover {
+        background: #eff6ff;
+      }
+
+      .empty-state {
+        color: var(--muted);
+        font-style: italic;
+        text-align: center;
+        border-style: dashed;
+      }
+
+      @media (max-width: 900px) {
+        .board {
+          grid-template-columns: 1fr;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <main class="page">
+      <header class="header">
+        <h1>Task Tracker</h1>
+        <p>Keep your work moving across the board.</p>
+      </header>
+
+      <section class="board" aria-label="Task board">
+        <section class="column" data-status="ToDo">
+          <div class="column-header">
+            <div class="column-title">To Do</div>
+            <div class="column-badge">1</div>
+          </div>
+          <div class="card-list">
+            <article class="card" data-task-id="sample-todo">
+              <div class="card-title">Draft onboarding checklist</div>
+              <div class="card-description">Gather the key steps for the new team setup.</div>
+              <div class="meta">
+                <span class="priority high">High</span>
+                <span class="assignee">Alex</span>
+              </div>
+              <div class="card-actions">
+                <button class="edit-btn" type="button">Edit</button>
+              </div>
+            </article>
+          </div>
+        </section>
+
+        <section class="column" data-status="InProgress">
+          <div class="column-header">
+            <div class="column-title">In Progress</div>
+            <div class="column-badge">1</div>
+          </div>
+          <div class="card-list">
+            <article class="card" data-task-id="sample-inprogress">
+              <div class="card-title">Wire up API client</div>
+              <div class="card-description">Connect the board UI to the task endpoints.</div>
+              <div class="meta">
+                <span class="priority medium">Medium</span>
+                <span class="assignee">Sam</span>
+              </div>
+              <div class="card-actions">
+                <button class="edit-btn" type="button">Edit</button>
+              </div>
+            </article>
+          </div>
+        </section>
+
+        <section class="column" data-status="Done">
+          <div class="column-header">
+            <div class="column-title">Done</div>
+            <div class="column-badge">1</div>
+          </div>
+          <div class="card-list">
+            <article class="card" data-task-id="sample-done">
+              <div class="card-title">Review requirements</div>
+              <div class="card-description">Finished the planning review and captured next steps.</div>
+              <div class="meta">
+                <span class="priority low">Low</span>
+                <span class="assignee">Unassigned</span>
+              </div>
+              <div class="card-actions">
+                <button class="edit-btn" type="button">Edit</button>
+              </div>
+            </article>
+          </div>
+        </section>
+      </section>
+    </main>
+
+    <script>
+      const BASE_URL = 'http://127.0.0.1:8000';
+      const PRIORITY_ORDER = {
+        High: 0,
+        Medium: 1,
+        Low: 2,
+      };
+      let tasks = [];
+      let boardStateEl = null;
+      let dragState = { taskId: null, previousStatus: null };
+
+      function escapeHtml(value) {
+        return String(value ?? '')
+          .replace(/&/g, '&amp;')
+          .replace(/</g, '&lt;')
+          .replace(/>/g, '&gt;')
+          .replace(/"/g, '&quot;')
+          .replace(/'/g, '&#39;');
+      }
+
+      function getTaskById(taskId) {
+        return tasks.find((task) => String(task.id) === String(taskId)) ?? null;
+      }
+
+      function clearDragState() {
+        dragState = { taskId: null, previousStatus: null };
+        document.querySelectorAll('.card.dragging').forEach((card) => card.classList.remove('dragging'));
+        document.querySelectorAll('.column.drag-over').forEach((column) => column.classList.remove('drag-over'));
+      }
+
+      function compareTasks(a, b) {
+        const priorityA = PRIORITY_ORDER[a.priority] ?? Number.MAX_SAFE_INTEGER;
+        const priorityB = PRIORITY_ORDER[b.priority] ?? Number.MAX_SAFE_INTEGER;
+        const priorityDiff = priorityA - priorityB;
+
+        if (priorityDiff !== 0) {
+          return priorityDiff;
+        }
+
+        return String(a.id).localeCompare(String(b.id));
+      }
+
+      function getTasksForStatus(status) {
+        return tasks
+          .filter((task) => task.status === status)
+          .slice()
+          .sort(compareTasks);
+      }
+
+      function renderTaskCard(task) {
+        const card = document.createElement('article');
+        card.className = 'card';
+        card.dataset.taskId = String(task.id);
+        card.draggable = true;
+
+        const title = escapeHtml(task.title || 'Untitled task');
+        const description = escapeHtml(task.description || '');
+        const priority = escapeHtml(task.priority || 'Medium');
+        const assignee = escapeHtml(task.assignee || 'Unassigned');
+        const priorityClass = priority.toLowerCase();
+
+        card.innerHTML = `
+          <div class="card-title">${title}</div>
+          <div class="card-description">${description}</div>
+          <div class="meta">
+            <span class="priority ${priorityClass}">${priority}</span>
+            <span class="assignee">${assignee}</span>
+          </div>
+          <div class="card-actions">
+            <button class="edit-btn" type="button">Edit</button>
+          </div>
+        `;
+
+        card.addEventListener('dragstart', (event) => {
+          const taskId = String(task.id);
+          dragState = { taskId, previousStatus: task.status };
+          card.classList.add('dragging');
+
+          if (event.dataTransfer) {
+            event.dataTransfer.effectAllowed = 'move';
+            event.dataTransfer.setData('text/plain', taskId);
+          }
+        });
+
+        card.addEventListener('dragend', () => {
+          card.classList.remove('dragging');
+          clearDragState();
+        });
+
+        return card;
+      }
+
+      function ensureBoardStateElement() {
+        if (boardStateEl) {
+          return boardStateEl;
+        }
+
+        const page = document.querySelector('.page');
+        const board = page?.querySelector('.board');
+
+        if (!page || !board) {
+          return null;
+        }
+
+        boardStateEl = document.createElement('div');
+        boardStateEl.id = 'board-state';
+        boardStateEl.style.marginBottom = '12px';
+        boardStateEl.style.padding = '10px 12px';
+        boardStateEl.style.borderRadius = '8px';
+        boardStateEl.style.fontWeight = '600';
+        boardStateEl.style.background = '#eff6ff';
+        boardStateEl.style.color = '#1e3a8a';
+        boardStateEl.setAttribute('role', 'status');
+        page.insertBefore(boardStateEl, board);
+        return boardStateEl;
+      }
+
+      function setBoardState(state, message, errorMessage) {
+        const stateEl = ensureBoardStateElement();
+        if (!stateEl) {
+          return;
+        }
+
+        if (state === 'loading') {
+          stateEl.style.background = '#eff6ff';
+          stateEl.style.color = '#1e3a8a';
+          stateEl.textContent = message || 'Loading tasks...';
+          return;
+        }
+
+        if (state === 'ready') {
+          stateEl.style.background = '#ecfdf3';
+          stateEl.style.color = '#166534';
+          stateEl.textContent = message || 'Tasks loaded';
+          return;
+        }
+
+        if (state === 'empty') {
+          stateEl.style.background = '#f8fafc';
+          stateEl.style.color = '#475569';
+          stateEl.textContent = message || 'No tasks available';
+          return;
+        }
+
+        stateEl.style.background = '#fef2f2';
+        stateEl.style.color = '#b91c1c';
+        stateEl.innerHTML = `
+          <span>${escapeHtml(message || 'Unable to load tasks.')}</span>
+          ${errorMessage ? `<span> ${escapeHtml(errorMessage)}</span>` : ''}
+          <button id="retry-tasks-btn" type="button" style="margin-left:10px; padding:4px 8px; border:1px solid #b91c1c; border-radius:6px; background:white; color:#b91c1c; cursor:pointer;">Retry</button>
+        `;
+
+        const retryButton = document.getElementById('retry-tasks-btn');
+        if (retryButton) {
+          retryButton.addEventListener('click', () => {
+            fetchTasks();
+          });
+        }
+      }
+
+      async function updateTaskStatus(taskId, targetStatus) {
+        const task = getTaskById(taskId);
+        if (!task || task.status === targetStatus) {
+          return;
+        }
+
+        const previousStatus = task.status;
+        tasks = tasks.map((entry) =>
+          String(entry.id) === String(taskId) ? { ...entry, status: targetStatus } : entry,
+        );
+        renderBoard(tasks);
+        setBoardState('ready', 'Task moved');
+
+        try {
+          const response = await fetch(`${BASE_URL}/tasks/${encodeURIComponent(taskId)}`, {
+            method: 'PATCH',
+            headers: {
+              'Content-Type': 'application/json',
+              Accept: 'application/json',
+            },
+            body: JSON.stringify({ status: targetStatus }),
+          });
+
+          if (!response.ok) {
+            let detail = 'Please try again.';
+            try {
+              const payload = await response.json();
+              detail = payload?.detail || detail;
+            } catch (parseError) {
+              detail = `Request failed with status ${response.status}`;
+            }
+            throw new Error(detail);
+          }
+
+          setBoardState('ready', 'Task moved');
+        } catch (error) {
+          tasks = tasks.map((entry) =>
+            String(entry.id) === String(taskId) ? { ...entry, status: previousStatus } : entry,
+          );
+          renderBoard(tasks);
+
+          if (error instanceof Error && error.message) {
+            setBoardState('error', 'Unable to update task.', error.message);
+            return;
+          }
+
+          setBoardState('error', 'Unable to update task.', 'Network error. Please try again.');
+        }
+      }
+
+      function bindColumnDropHandlers() {
+        document.querySelectorAll('.column').forEach((column) => {
+          column.addEventListener('dragover', (event) => {
+            event.preventDefault();
+            column.classList.add('drag-over');
+            if (event.dataTransfer) {
+              event.dataTransfer.dropEffect = 'move';
+            }
+          });
+
+          column.addEventListener('dragleave', (event) => {
+            if (event.relatedTarget && column.contains(event.relatedTarget)) {
+              return;
+            }
+            column.classList.remove('drag-over');
+          });
+
+          column.addEventListener('drop', async (event) => {
+            event.preventDefault();
+            column.classList.remove('drag-over');
+
+            const taskId = event.dataTransfer?.getData('text/plain') || dragState.taskId;
+            const targetStatus = column.getAttribute('data-status');
+
+            if (!taskId || !targetStatus) {
+              clearDragState();
+              return;
+            }
+
+            const task = getTaskById(taskId);
+            if (!task || task.status === targetStatus) {
+              clearDragState();
+              return;
+            }
+
+            await updateTaskStatus(taskId, targetStatus);
+            clearDragState();
+          });
+        });
+      }
+
+      function renderBoard(taskList) {
+        const columns = document.querySelectorAll('.column');
+
+        columns.forEach((column) => {
+          const status = column.getAttribute('data-status');
+          const cardList = column.querySelector('.card-list');
+          const countBadge = column.querySelector('.column-badge');
+          const matchingTasks = getTasksForStatus(status);
+
+          if (countBadge) {
+            countBadge.textContent = String(matchingTasks.length);
+          }
+
+          cardList.innerHTML = '';
+
+          if (matchingTasks.length === 0) {
+            const emptyState = document.createElement('div');
+            emptyState.className = 'card empty-state';
+            emptyState.textContent = 'No tasks';
+            cardList.appendChild(emptyState);
+            return;
+          }
+
+          matchingTasks.forEach((task) => {
+            cardList.appendChild(renderTaskCard(task));
+          });
+        });
+      }
+
+      async function fetchTasks() {
+        setBoardState('loading', 'Loading tasks...');
+        renderBoard([]);
+
+        try {
+          const response = await fetch(`${BASE_URL}/tasks`, {
+            method: 'GET',
+            headers: {
+              Accept: 'application/json',
+            },
+          });
+
+          if (!response.ok) {
+            throw new Error(`Request failed with status ${response.status}`);
+          }
+
+          const payload = await response.json();
+          tasks = Array.isArray(payload) ? payload : [];
+
+          if (tasks.length === 0) {
+            setBoardState('empty', 'No tasks available');
+            renderBoard(tasks);
+            return;
+          }
+
+          setBoardState('ready', 'Tasks loaded');
+          renderBoard(tasks);
+        } catch (error) {
+          console.error('Failed to load tasks:', error);
+          tasks = [];
+          setBoardState('error', 'Unable to load tasks.', error.message || 'Please try again.');
+          renderBoard(tasks);
+        }
+      }
+
+      document.addEventListener('DOMContentLoaded', () => {
+        bindColumnDropHandlers();
+        fetchTasks();
+      });
+    </script>
+  </body>
+</html>
