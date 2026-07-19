@@ -40,14 +40,37 @@
         margin-bottom: 24px;
       }
 
+      .header-row {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        gap: 12px;
+        margin-bottom: 8px;
+      }
+
       .header h1 {
-        margin: 0 0 8px;
+        margin: 0;
         font-size: 2rem;
       }
 
       .header p {
         margin: 0;
         color: var(--muted);
+      }
+
+      .action-btn {
+        border: 1px solid var(--accent);
+        background: var(--accent);
+        color: white;
+        border-radius: 8px;
+        padding: 8px 12px;
+        font-size: 0.95rem;
+        font-weight: 600;
+        cursor: pointer;
+      }
+
+      .action-btn:hover {
+        background: #1d4ed8;
       }
 
       .board {
@@ -184,9 +207,123 @@
         border-style: dashed;
       }
 
+      .modal-overlay {
+        position: fixed;
+        inset: 0;
+        background: rgba(15, 23, 42, 0.55);
+        display: none;
+        align-items: center;
+        justify-content: center;
+        padding: 20px;
+        z-index: 1000;
+      }
+
+      .modal-overlay.is-open {
+        display: flex;
+      }
+
+      .modal {
+        width: min(100%, 560px);
+        background: white;
+        border-radius: 14px;
+        border: 1px solid var(--border);
+        box-shadow: 0 20px 40px rgba(15, 23, 42, 0.16);
+        padding: 20px;
+      }
+
+      .modal-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 16px;
+      }
+
+      .modal-title {
+        margin: 0;
+        font-size: 1.2rem;
+      }
+
+      .modal-close-btn {
+        border: 0;
+        background: transparent;
+        color: var(--muted);
+        cursor: pointer;
+        font-size: 1.3rem;
+      }
+
+      .modal-form {
+        display: grid;
+        gap: 12px;
+      }
+
+      .form-field {
+        display: flex;
+        flex-direction: column;
+        gap: 6px;
+      }
+
+      .form-field label {
+        font-weight: 600;
+        font-size: 0.95rem;
+      }
+
+      .form-field input,
+      .form-field textarea,
+      .form-field select {
+        border: 1px solid var(--border);
+        border-radius: 8px;
+        padding: 10px 12px;
+        font: inherit;
+        background: white;
+      }
+
+      .form-field textarea {
+        min-height: 96px;
+        resize: vertical;
+      }
+
+      .form-field input.input-error,
+      .form-field textarea.input-error,
+      .form-field select.input-error {
+        border-color: #dc2626;
+      }
+
+      .field-error,
+      .form-error {
+        color: #b91c1c;
+        font-size: 0.9rem;
+      }
+
+      .modal-actions {
+        display: flex;
+        justify-content: flex-end;
+        gap: 10px;
+        margin-top: 8px;
+      }
+
+      .secondary-btn {
+        border: 1px solid var(--border);
+        background: white;
+        color: var(--text);
+        border-radius: 8px;
+        padding: 8px 12px;
+        font-size: 0.95rem;
+        font-weight: 600;
+        cursor: pointer;
+      }
+
+      .secondary-btn:hover {
+        background: #f8fafc;
+      }
+
       @media (max-width: 900px) {
         .board {
           grid-template-columns: 1fr;
+        }
+
+        .header-row {
+          flex-direction: column;
+          align-items: flex-start;
         }
       }
     </style>
@@ -194,8 +331,13 @@
   <body>
     <main class="page">
       <header class="header">
-        <h1>Task Tracker</h1>
-        <p>Keep your work moving across the board.</p>
+        <div class="header-row">
+          <div>
+            <h1>Task Tracker</h1>
+            <p>Keep your work moving across the board.</p>
+          </div>
+          <button class="action-btn" id="new-task-btn" type="button">New Task</button>
+        </div>
       </header>
 
       <section class="board" aria-label="Task board">
@@ -261,8 +403,61 @@
       </section>
     </main>
 
+    <div class="modal-overlay" id="task-modal-overlay" aria-hidden="true">
+      <div class="modal" role="dialog" aria-modal="true" aria-labelledby="task-modal-title">
+        <div class="modal-header">
+          <h2 class="modal-title" id="task-modal-title">New Task</h2>
+          <button class="modal-close-btn" id="task-modal-close" type="button" aria-label="Close modal">×</button>
+        </div>
+        <form class="modal-form" id="task-form">
+          <input id="task-id" type="hidden" name="taskId" />
+
+          <div class="form-field">
+            <label for="task-title">Title</label>
+            <input id="task-title" name="title" type="text" maxlength="200" />
+            <div class="field-error" id="task-title-error"></div>
+          </div>
+
+          <div class="form-field">
+            <label for="task-description">Description</label>
+            <textarea id="task-description" name="description"></textarea>
+          </div>
+
+          <div class="form-field">
+            <label for="task-status">Status</label>
+            <select id="task-status" name="status">
+              <option value="ToDo">To Do</option>
+              <option value="InProgress">In Progress</option>
+              <option value="Done">Done</option>
+            </select>
+          </div>
+
+          <div class="form-field">
+            <label for="task-priority">Priority</label>
+            <select id="task-priority" name="priority">
+              <option value="High">High</option>
+              <option value="Medium">Medium</option>
+              <option value="Low">Low</option>
+            </select>
+          </div>
+
+          <div class="form-field">
+            <label for="task-assignee">Assignee</label>
+            <input id="task-assignee" name="assignee" type="text" />
+          </div>
+
+          <div class="form-error" id="task-form-error"></div>
+
+          <div class="modal-actions">
+            <button class="secondary-btn" id="task-modal-cancel" type="button">Cancel</button>
+            <button class="action-btn" type="submit">Save</button>
+          </div>
+        </form>
+      </div>
+    </div>
+
     <script>
-      const BASE_URL = 'http://127.0.0.1:8000';
+      const BASE_URL = 'http://localhost:8000';
       const PRIORITY_ORDER = {
         High: 0,
         Medium: 1,
@@ -271,6 +466,7 @@
       let tasks = [];
       let boardStateEl = null;
       let dragState = { taskId: null, previousStatus: null };
+      let modalState = { mode: 'create', taskId: null };
 
       function escapeHtml(value) {
         return String(value ?? '')
@@ -333,6 +529,12 @@
             <button class="edit-btn" type="button">Edit</button>
           </div>
         `;
+
+        const editButton = card.querySelector('.edit-btn');
+        editButton?.addEventListener('click', (event) => {
+          event.stopPropagation();
+          openTaskModal('edit', task);
+        });
 
         card.addEventListener('dragstart', (event) => {
           const taskId = String(task.id);
@@ -418,6 +620,248 @@
           retryButton.addEventListener('click', () => {
             fetchTasks();
           });
+        }
+      }
+
+      function getTaskModalElements() {
+        return {
+          overlay: document.getElementById('task-modal-overlay'),
+          dialog: document.querySelector('#task-modal-overlay .modal'),
+          title: document.getElementById('task-modal-title'),
+          form: document.getElementById('task-form'),
+          taskIdInput: document.getElementById('task-id'),
+          titleInput: document.getElementById('task-title'),
+          descriptionInput: document.getElementById('task-description'),
+          statusInput: document.getElementById('task-status'),
+          priorityInput: document.getElementById('task-priority'),
+          assigneeInput: document.getElementById('task-assignee'),
+          titleError: document.getElementById('task-title-error'),
+          formError: document.getElementById('task-form-error'),
+          cancelButton: document.getElementById('task-modal-cancel'),
+          closeButton: document.getElementById('task-modal-close'),
+        };
+      }
+
+      function clearTaskModalErrors() {
+        const elements = getTaskModalElements();
+        if (elements.titleError) {
+          elements.titleError.textContent = '';
+        }
+        if (elements.formError) {
+          elements.formError.textContent = '';
+        }
+        if (elements.titleInput) {
+          elements.titleInput.classList.remove('input-error');
+        }
+      }
+
+      function resetTaskModalForm() {
+        const elements = getTaskModalElements();
+        if (!elements.form) {
+          return;
+        }
+
+        elements.form.reset();
+        if (elements.taskIdInput) {
+          elements.taskIdInput.value = '';
+        }
+        if (elements.titleInput) {
+          elements.titleInput.value = '';
+        }
+        if (elements.descriptionInput) {
+          elements.descriptionInput.value = '';
+        }
+        if (elements.statusInput) {
+          elements.statusInput.value = 'ToDo';
+        }
+        if (elements.priorityInput) {
+          elements.priorityInput.value = 'Medium';
+        }
+        if (elements.assigneeInput) {
+          elements.assigneeInput.value = '';
+        }
+      }
+
+      function closeTaskModal() {
+        const elements = getTaskModalElements();
+        clearTaskModalErrors();
+        resetTaskModalForm();
+        modalState = { mode: 'create', taskId: null };
+        if (elements.overlay) {
+          elements.overlay.classList.remove('is-open');
+          elements.overlay.setAttribute('aria-hidden', 'true');
+        }
+        if (elements.title) {
+          elements.title.textContent = 'New Task';
+        }
+      }
+
+      function openTaskModal(mode, task = null) {
+        const elements = getTaskModalElements();
+        resetTaskModalForm();
+        clearTaskModalErrors();
+        modalState = { mode, taskId: task?.id ?? null };
+
+        if (elements.title) {
+          elements.title.textContent = mode === 'edit' ? 'Edit Task' : 'New Task';
+        }
+
+        if (mode === 'edit' && task) {
+          if (elements.taskIdInput) {
+            elements.taskIdInput.value = String(task.id);
+          }
+          if (elements.titleInput) {
+            elements.titleInput.value = task.title || '';
+          }
+          if (elements.descriptionInput) {
+            elements.descriptionInput.value = task.description || '';
+          }
+          if (elements.statusInput) {
+            elements.statusInput.value = task.status || 'ToDo';
+          }
+          if (elements.priorityInput) {
+            elements.priorityInput.value = task.priority || 'Medium';
+          }
+          if (elements.assigneeInput) {
+            elements.assigneeInput.value = task.assignee || '';
+          }
+        }
+
+        if (elements.overlay) {
+          elements.overlay.classList.add('is-open');
+          elements.overlay.setAttribute('aria-hidden', 'false');
+        }
+        elements.titleInput?.focus();
+      }
+
+      function showTaskFieldError(message) {
+        const elements = getTaskModalElements();
+        if (elements.titleError) {
+          elements.titleError.textContent = message;
+        }
+        if (elements.titleInput) {
+          elements.titleInput.classList.add('input-error');
+        }
+      }
+
+      function showTaskFormError(message) {
+        const elements = getTaskModalElements();
+        if (elements.formError) {
+          elements.formError.textContent = message;
+        }
+      }
+
+      function extractServerErrorMessage(payload) {
+        if (typeof payload?.detail === 'string') {
+          return payload.detail;
+        }
+
+        if (Array.isArray(payload?.detail)) {
+          return payload.detail
+            .map((item) => (typeof item === 'string' ? item : item?.msg || 'Invalid value'))
+            .join(' ');
+        }
+
+        return 'Unable to save task.';
+      }
+
+      async function submitTaskForm(event) {
+        event.preventDefault();
+
+        const elements = getTaskModalElements();
+        clearTaskModalErrors();
+
+        const title = elements.titleInput?.value.trim() || '';
+        if (!title) {
+          showTaskFieldError('Title is required');
+          elements.titleInput?.focus();
+          return;
+        }
+
+        const description = elements.descriptionInput?.value ?? '';
+        const status = elements.statusInput?.value || 'ToDo';
+        const priority = elements.priorityInput?.value || 'Medium';
+        const assignee = elements.assigneeInput?.value.trim() ? elements.assigneeInput.value.trim() : null;
+
+        const isEdit = modalState.mode === 'edit' && modalState.taskId;
+        const currentTask = isEdit ? getTaskById(modalState.taskId) : null;
+        let payload = {
+          title,
+          description,
+          status,
+          priority,
+          assignee,
+        };
+
+        if (isEdit && currentTask) {
+          const patchPayload = {};
+          const currentTitle = currentTask.title || '';
+          const currentDescription = currentTask.description || '';
+          const currentStatus = currentTask.status || 'ToDo';
+          const currentPriority = currentTask.priority || 'Medium';
+          const currentAssignee = currentTask.assignee ?? null;
+
+          if (title !== currentTitle) {
+            patchPayload.title = title;
+          }
+          if (description !== currentDescription) {
+            patchPayload.description = description;
+          }
+          if (status !== currentStatus) {
+            patchPayload.status = status;
+          }
+          if (priority !== currentPriority) {
+            patchPayload.priority = priority;
+          }
+          if (assignee !== currentAssignee) {
+            patchPayload.assignee = assignee;
+          }
+
+          payload = patchPayload;
+        }
+
+        const url = isEdit
+          ? `${BASE_URL}/tasks/${encodeURIComponent(modalState.taskId)}`
+          : `${BASE_URL}/tasks`;
+        const method = isEdit ? 'PATCH' : 'POST';
+
+        try {
+          const response = await fetch(url, {
+            method,
+            headers: {
+              'Content-Type': 'application/json',
+              Accept: 'application/json',
+            },
+            body: JSON.stringify(payload),
+          });
+
+          if (response.ok) {
+            closeTaskModal();
+            await fetchTasks();
+            return;
+          }
+
+          let detail = 'Unable to save task.';
+          try {
+            const errorPayload = await response.json();
+            detail = extractServerErrorMessage(errorPayload);
+          } catch (parseError) {
+            detail = `Request failed with status ${response.status}`;
+          }
+
+          if (response.status === 422) {
+            if (/title/i.test(detail)) {
+              showTaskFieldError(detail);
+            } else {
+              showTaskFormError(detail);
+            }
+            return;
+          }
+
+          showTaskFormError(detail);
+        } catch (error) {
+          console.error('Failed to save task:', error);
+          showTaskFormError('Unable to save task. Please try again.');
         }
       }
 
@@ -576,8 +1020,54 @@
         }
       }
 
+      function bindModalHandlers() {
+        const elements = getTaskModalElements();
+        const board = document.querySelector('.board');
+
+        if (elements.form) {
+          elements.form.addEventListener('submit', submitTaskForm);
+        }
+
+        document.getElementById('new-task-btn')?.addEventListener('click', () => {
+          openTaskModal('create');
+        });
+
+        elements.cancelButton?.addEventListener('click', closeTaskModal);
+        elements.closeButton?.addEventListener('click', closeTaskModal);
+
+        elements.overlay?.addEventListener('click', (event) => {
+          if (event.target === elements.overlay) {
+            closeTaskModal();
+          }
+        });
+
+        document.addEventListener('keydown', (event) => {
+          if (event.key === 'Escape' && elements.overlay?.classList.contains('is-open')) {
+            closeTaskModal();
+          }
+        });
+
+        board?.addEventListener('click', (event) => {
+          const editButton = event.target.closest('.edit-btn');
+          if (!editButton) {
+            return;
+          }
+
+          const card = editButton.closest('.card');
+          if (!card?.dataset.taskId) {
+            return;
+          }
+
+          const task = getTaskById(card.dataset.taskId);
+          if (task) {
+            openTaskModal('edit', task);
+          }
+        });
+      }
+
       document.addEventListener('DOMContentLoaded', () => {
         bindColumnDropHandlers();
+        bindModalHandlers();
         fetchTasks();
       });
     </script>
