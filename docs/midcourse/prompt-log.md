@@ -653,3 +653,115 @@ The frontend styling was improved while preserving the existing application beha
 - Verified task deletion
 - Verified loading, empty, populated, and error states
 - Reran the complete backend test suite
+
+---
+
+## Prompt 18 — Fix Overdue Filtering
+
+### Tool
+Claude Code
+
+### Goal
+
+Correct the overdue filtering implementation based on the reported review issue while preserving the existing API behavior.
+
+### Prompt
+
+Review the overdue filtering implementation in the Task Tracker backend.
+
+The current implementation does not correctly handle all overdue filtering scenarios.
+
+Requirements:
+
+- Identify the root cause.
+- Fix only the overdue filtering logic.
+- Preserve the existing API contract and response format.
+- Do not modify tests to make the implementation pass.
+- Do not introduce unrelated refactoring.
+- After implementing the fix, rerun the affected tests and the complete pytest suite.
+- Summarize the root cause, implemented fix, and verification results.
+
+### Outcome
+
+Claude identified the root cause of the overdue filtering issue, implemented a focused fix, and preserved the existing application behavior without introducing unrelated changes.
+
+### Verification
+
+- Reran the overdue filtering tests.
+- Verified overdue filtering manually through the API and frontend.
+- Reran the complete pytest suite successfully.
+
+---
+
+## Prompt 19 — Fix Tag Filtering
+
+### Tool
+Claude Code
+
+### Goal
+
+Correct the tag filtering implementation based on the reported review issue while preserving the existing filtering behavior.
+
+### Prompt
+
+Review the tag filtering implementation in the Task Tracker backend.
+
+The current implementation does not satisfy the expected tag filtering behavior.
+
+Requirements:
+
+- Identify the root cause.
+- Fix only the tag filtering implementation.
+- Preserve existing API behavior.
+- Do not weaken or modify existing tests.
+- Preserve case-insensitive matching and whitespace normalization.
+- Do not introduce unrelated refactoring.
+- Rerun the affected tests followed by the complete pytest suite.
+- Summarize the implemented fix and verification results.
+
+### Outcome
+
+Claude corrected the tag filtering implementation while preserving the existing API contract and filtering behavior.
+
+### Verification
+
+- Reran the tag filtering tests.
+- Verified tag filtering manually through the API and frontend.
+- Reran the complete pytest suite successfully.
+
+---
+
+## Prompt 20 — Business Rules Refactor
+
+### Tool
+Claude Code
+
+### Goal
+
+Improve the readability and maintainability of the business rules without changing application behavior.
+
+### Prompt
+
+Perform a small, behavior-preserving refactor of `app/business_rules.py`.
+
+Requirements:
+
+- Inspect the existing implementation and related tests.
+- Select one small section that can be improved.
+- Refactor only the selected section.
+- Improve readability by simplifying logic, extracting a helper, improving naming, or removing duplication.
+- Preserve all public behavior, validation rules, status transitions, and overdue calculation.
+- Do not modify tests.
+- Do not introduce new functionality.
+- After the refactor, rerun the affected tests and the complete pytest suite.
+- Summarize the selected refactor and explain why it preserves behavior.
+
+### Outcome
+
+Claude performed a focused refactor of the business rules, improving code readability and maintainability while preserving the existing application behavior.
+
+### Verification
+
+- Executed the behavior contract before and after the refactor.
+- Performed manual API verification of status transitions and overdue filtering.
+- Reran the complete pytest suite successfully.
