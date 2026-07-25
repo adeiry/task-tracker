@@ -358,3 +358,202 @@ Claude reviewed the completed implementation and confirmed that the due date fea
 - Ran the complete pytest suite successfully.
 - Manually verified task creation, editing, overdue highlighting, and overdue filtering.
 - Confirmed that existing functionality continued to work without regression.
+
+---
+
+## Prompt 11 – Tags Feature Inspection
+
+### Tool
+Claude Code
+
+### Goal
+Understand the minimum backend and frontend changes required to add task tags while preserving the existing project architecture.
+
+### Prompt
+Inspect the current Task Tracker project before implementing tags.
+
+The project already supports:
+
+- CRUD
+- Status transitions
+- Due dates
+- Overdue highlighting
+- Overdue filtering
+
+Inspect:
+
+- app/models.py
+- app/storage.py
+- app/main.py
+- tests/test_tasks.py
+- frontend/index.html
+- frontend/script.js (or equivalent)
+- frontend/styles.css (or equivalent)
+
+Explain:
+
+- the minimum backend changes
+- the minimum frontend changes
+- where tags should be stored
+- how tag filtering should integrate with the existing filters
+
+Do not edit any files.
+Do not implement anything yet.
+Do not suggest unrelated refactoring.
+
+### Outcome
+Claude identified the backend models, storage layer, frontend forms, task card rendering, and filtering logic that needed to be updated. It recommended storing tags as a list of strings within each task while preserving the existing architecture.
+
+### Verification
+Reviewed the proposed implementation plan and confirmed it aligned with the project's architecture before making any code changes.
+
+---
+
+## Prompt 12 – Backend Tag Implementation
+
+### Tool
+Claude Code
+
+### Goal
+Implement backend support for task tags while preserving existing functionality.
+
+### Prompt
+Implement backend support for task tags.
+
+Requirements:
+
+- Add an optional tags field to tasks.
+- Store tags as a list of strings.
+- Default to an empty list.
+- Support creating tasks with tags.
+- Support updating tags.
+- Return tags in API responses.
+
+Validation:
+
+- Remove leading/trailing whitespace.
+- Ignore empty tags.
+- Prevent duplicate tags.
+- Duplicate detection should be case-insensitive.
+
+Constraints:
+
+- Preserve all existing behavior.
+- Do not modify due date functionality.
+- Do not implement frontend changes.
+- Do not refactor unrelated code.
+
+After editing, summarize every change.
+
+### Outcome
+Claude extended the backend task models and storage logic to support tags. Tag normalization, duplicate removal, and validation were implemented while maintaining backward compatibility with the existing API.
+
+### Verification
+Verified that:
+- Existing API behavior remained unchanged.
+- Tasks could be created and updated with tags.
+- Normalization and validation behaved as expected.
+- Existing backend tests continued to pass.
+
+---
+
+## Prompt 13 – Backend Tag Tests
+
+### Tool
+Claude Code
+
+### Goal
+Verify that the backend tag functionality behaves correctly using automated tests.
+
+### Prompt
+Add focused pytest tests for task tags.
+
+Add tests covering:
+
+1. Create task with multiple tags.
+2. Create task without tags.
+3. Empty tags are ignored.
+4. Duplicate tags are removed.
+5. Updating tags replaces the existing list.
+
+Follow the existing test structure.
+
+Do not modify existing tests.
+
+Run the complete pytest suite after editing.
+
+### Outcome
+Claude added backend tests covering valid tag creation, optional tags, normalization, duplicate removal, and tag updates while preserving the existing test suite.
+
+### Verification
+- Ran the complete pytest suite successfully.
+- Intentionally modified one assertion to create a failing test.
+- Confirmed the failure.
+- Restored the correct assertion.
+- Re-ran the suite and confirmed all tests passed.
+
+---
+
+## Prompt 14 – Frontend Tag Implementation
+
+### Tool
+Claude Code
+
+### Goal
+Allow users to create, edit, and display task tags from the frontend.
+
+### Prompt
+Implement frontend support for task tags.
+
+Requirements:
+
+- Add a Tags input to the create task form.
+- Add a Tags input to the edit task form.
+- Accept comma-separated values.
+- Convert the input into a list before sending it to the backend.
+- Display tags on every task card.
+- Preserve existing functionality.
+- Do not modify due date functionality.
+- Do not refactor unrelated code.
+
+Summarize every change after editing.
+
+### Outcome
+Claude updated the task forms to support comma-separated tag input, converted user input into a list before sending it to the backend, and displayed task tags on each Kanban card.
+
+### Verification
+Manually verified that:
+- Tasks can be created with tags.
+- Existing tasks can be edited.
+- Tags are displayed correctly.
+- Tasks without tags continue to display normally.
+
+---
+
+## Prompt 15 – Tag Filtering
+
+### Tool
+Claude Code
+
+### Goal
+Allow users to filter the Kanban board by task tag.
+
+### Prompt
+Implement tag filtering.
+
+Requirements:
+
+- Add a Tag filter to the existing filters.
+- Allow filtering by a single tag.
+- Filtering should be case-insensitive.
+- Preserve existing status, priority, and overdue filtering.
+- Do not modify backend routes.
+
+### Outcome
+Claude integrated tag filtering into the existing frontend filtering system using case-insensitive comparisons while preserving the existing filtering behavior.
+
+### Verification
+Manually verified that:
+- Selecting a tag displayed only matching tasks.
+- Clearing the filter restored the complete task list.
+- Status, priority, and overdue filters continued to work correctly alongside the new tag filter.

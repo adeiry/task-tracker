@@ -17,6 +17,21 @@ class TaskPriority(str, Enum):
     HIGH = "High"
 
 
+def _normalize_tags(tags: list[str]) -> list[str]:
+    normalized: list[str] = []
+    seen: set[str] = set()
+    for tag in tags:
+        cleaned = tag.strip()
+        if not cleaned:
+            continue
+        key = cleaned.lower()
+        if key in seen:
+            continue
+        seen.add(key)
+        normalized.append(cleaned)
+    return normalized
+
+
 class TaskCreate(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
@@ -26,6 +41,7 @@ class TaskCreate(BaseModel):
     priority: TaskPriority = TaskPriority.MEDIUM
     assignee: Optional[str] = None
     due_date: date | None = None
+    tags: list[str] = []
 
     @field_validator("title")
     @classmethod
@@ -37,6 +53,11 @@ class TaskCreate(BaseModel):
             raise ValueError("title must be at most 200 characters")
         return v
 
+    @field_validator("tags")
+    @classmethod
+    def validate_tags(cls, v: list[str]) -> list[str]:
+        return _normalize_tags(v)
+
 
 class TaskUpdate(BaseModel):
     model_config = ConfigDict(extra="forbid")
@@ -47,6 +68,7 @@ class TaskUpdate(BaseModel):
     priority: Optional[TaskPriority] = None
     assignee: Optional[str] = None
     due_date: date | None = None
+    tags: Optional[list[str]] = None
 
     @field_validator("title")
     @classmethod
@@ -60,6 +82,13 @@ class TaskUpdate(BaseModel):
             raise ValueError("title must be at most 200 characters")
         return v
 
+    @field_validator("tags")
+    @classmethod
+    def validate_tags(cls, v: Optional[list[str]]) -> Optional[list[str]]:
+        if v is None:
+            return v
+        return _normalize_tags(v)
+
 
 class TaskResponse(BaseModel):
     model_config = ConfigDict(extra="forbid")
@@ -71,5 +100,6 @@ class TaskResponse(BaseModel):
     priority: TaskPriority
     assignee: Optional[str]
     due_date: date | None
+    tags: list[str]
     created_at: datetime
     updated_at: datetime

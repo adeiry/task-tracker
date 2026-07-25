@@ -196,3 +196,53 @@ def test_patch_due_date_null_clears_existing_due_date(client):
 
     assert response.status_code == 200
     assert response.json()["due_date"] is None
+
+
+def test_create_task_with_multiple_tags_returns_201_with_tags(client):
+    response = client.post(
+        "/tasks",
+        json={"title": "Task with tags", "tags": ["Urgent", "Bug"]},
+    )
+
+    assert response.status_code == 201
+    assert response.json()["tags"] == ["Urgent", "Bug"]
+
+
+def test_create_task_without_tags_returns_201_with_empty_list(client):
+    response = client.post("/tasks", json={"title": "Task without tags"})
+
+    assert response.status_code == 201
+    assert response.json()["tags"] == []
+
+
+def test_create_task_empty_tags_are_ignored(client):
+    response = client.post(
+        "/tasks",
+        json={"title": "Task", "tags": ["Urgent", "", "   "]},
+    )
+
+    assert response.status_code == 201
+    assert response.json()["tags"] == ["Urgent"]
+
+
+def test_create_task_duplicate_tags_are_removed(client):
+    response = client.post(
+        "/tasks",
+        json={"title": "Task", "tags": ["Bug", "bug", "BUG"]},
+    )
+
+    assert response.status_code == 201
+    assert response.json()["tags"] == ["Bug"]
+
+
+def test_patch_tags_replaces_existing_list(client):
+    create_response = client.post(
+        "/tasks",
+        json={"title": "Task with tags", "tags": ["a", "b"]},
+    )
+    task_id = create_response.json()["id"]
+
+    response = client.patch(f"/tasks/{task_id}", json={"tags": ["c"]})
+
+    assert response.status_code == 200
+    assert response.json()["tags"] == ["c"]

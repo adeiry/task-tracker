@@ -195,6 +195,22 @@
         border-color: #dc2626;
       }
 
+      .tags {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 6px;
+        margin-bottom: 10px;
+      }
+
+      .tag {
+        background: #eef2ff;
+        color: #3730a3;
+        border-radius: 999px;
+        padding: 2px 10px;
+        font-size: 0.78rem;
+        font-weight: 600;
+      }
+
       .card-actions {
         display: flex;
         justify-content: flex-end;
@@ -345,6 +361,15 @@
         cursor: pointer;
       }
 
+      .filters-row input[type="text"] {
+        border: 1px solid var(--border);
+        border-radius: 8px;
+        padding: 6px 10px;
+        font: inherit;
+        font-size: 0.9rem;
+        cursor: text;
+      }
+
       @media (max-width: 900px) {
         .board {
           grid-template-columns: 1fr;
@@ -373,6 +398,10 @@
         <label for="overdue-filter-toggle">
           <input type="checkbox" id="overdue-filter-toggle" />
           Show overdue only
+        </label>
+        <label for="tag-filter-input">
+          Tag
+          <input type="text" id="tag-filter-input" placeholder="Filter by tag" />
         </label>
       </div>
 
@@ -487,6 +516,11 @@
             <input id="task-due-date" name="due_date" type="date" />
           </div>
 
+          <div class="form-field">
+            <label for="task-tags">Tags</label>
+            <input id="task-tags" name="tags" type="text" placeholder="comma-separated, e.g. bug, urgent" />
+          </div>
+
           <div class="form-error" id="task-form-error"></div>
 
           <div class="modal-actions">
@@ -509,6 +543,7 @@
       let dragState = { taskId: null, previousStatus: null };
       let modalState = { mode: 'create', taskId: null };
       let showOverdueOnly = false;
+      let tagFilter = '';
 
       function escapeHtml(value) {
         return String(value ?? '')
@@ -556,10 +591,16 @@
         return String(a.id).localeCompare(String(b.id));
       }
 
+      function taskHasTag(task, tag) {
+        const target = tag.toLowerCase();
+        return (task.tags || []).some((taskTag) => taskTag.toLowerCase() === target);
+      }
+
       function getTasksForStatus(status) {
         return tasks
           .filter((task) => task.status === status)
           .filter((task) => !showOverdueOnly || isTaskOverdue(task))
+          .filter((task) => !tagFilter || taskHasTag(task, tagFilter))
           .slice()
           .sort(compareTasks);
       }
@@ -579,6 +620,9 @@
         const dueDateHtml = task.due_date
           ? `<div class="due-date${overdue ? ' overdue' : ''}">Due ${escapeHtml(task.due_date)}${overdue ? ' · Overdue' : ''}</div>`
           : '';
+        const tagsHtml = (task.tags || []).length
+          ? `<div class="tags">${task.tags.map((tag) => `<span class="tag">${escapeHtml(tag)}</span>`).join('')}</div>`
+          : '';
 
         if (overdue) {
           card.classList.add('overdue');
@@ -591,6 +635,7 @@
             <span class="priority ${priorityClass}">${priority}</span>
             <span class="assignee">${assignee}</span>
           </div>
+          ${tagsHtml}
           ${dueDateHtml}
           <div class="card-actions">
             <button class="edit-btn" type="button">Edit</button>
@@ -703,6 +748,7 @@
           priorityInput: document.getElementById('task-priority'),
           assigneeInput: document.getElementById('task-assignee'),
           dueDateInput: document.getElementById('task-due-date'),
+          tagsInput: document.getElementById('task-tags'),
           titleError: document.getElementById('task-title-error'),
           formError: document.getElementById('task-form-error'),
           cancelButton: document.getElementById('task-modal-cancel'),
@@ -751,6 +797,9 @@
         if (elements.dueDateInput) {
           elements.dueDateInput.value = '';
         }
+        if (elements.tagsInput) {
+          elements.tagsInput.value = '';
+        }
       }
 
       function closeTaskModal() {
@@ -798,6 +847,9 @@
           }
           if (elements.dueDateInput) {
             elements.dueDateInput.value = task.due_date || '';
+          }
+          if (elements.tagsInput) {
+            elements.tagsInput.value = (task.tags || []).join(', ');
           }
         }
 
@@ -857,6 +909,10 @@
         const priority = elements.priorityInput?.value || 'Medium';
         const assignee = elements.assigneeInput?.value.trim() ? elements.assigneeInput.value.trim() : null;
         const dueDate = elements.dueDateInput?.value || null;
+        const tags = (elements.tagsInput?.value || '')
+          .split(',')
+          .map((tag) => tag.trim())
+          .filter((tag) => tag.length > 0);
 
         const isEdit = modalState.mode === 'edit' && modalState.taskId;
         const currentTask = isEdit ? getTaskById(modalState.taskId) : null;
@@ -867,6 +923,7 @@
           priority,
           assignee,
           due_date: dueDate,
+          tags,
         };
 
         if (isEdit && currentTask) {
@@ -877,6 +934,7 @@
           const currentPriority = currentTask.priority || 'Medium';
           const currentAssignee = currentTask.assignee ?? null;
           const currentDueDate = currentTask.due_date ?? null;
+          const currentTags = currentTask.tags || [];
 
           if (title !== currentTitle) {
             patchPayload.title = title;
@@ -895,6 +953,9 @@
           }
           if (dueDate !== currentDueDate) {
             patchPayload.due_date = dueDate;
+          }
+          if (tags.join(',') !== currentTags.join(',')) {
+            patchPayload.tags = tags;
           }
 
           payload = patchPayload;
@@ -1148,6 +1209,11 @@
       function bindFilterHandlers() {
         document.getElementById('overdue-filter-toggle')?.addEventListener('change', (event) => {
           showOverdueOnly = event.target.checked;
+          renderBoard(tasks);
+        });
+
+        document.getElementById('tag-filter-input')?.addEventListener('input', (event) => {
+          tagFilter = event.target.value.trim();
           renderBoard(tasks);
         });
       }
