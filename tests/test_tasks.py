@@ -218,14 +218,54 @@ def test_create_task_without_tags_returns_201_with_empty_list(client):
     assert response.json()["tags"] == []
 
 
-def test_create_task_empty_tags_are_ignored(client):
+def test_create_task_blank_tag_among_valid_tags_returns_422(client):
     response = client.post(
         "/tasks",
-        json={"title": "Task", "tags": ["Urgent", "", "   "]},
+        json={"title": "Task", "tags": ["bug", ""]},
     )
 
+    assert response.status_code == 422
+
+
+def test_create_task_whitespace_only_tag_among_valid_tags_returns_422(client):
+    response = client.post(
+        "/tasks",
+        json={"title": "Task", "tags": ["bug", "   "]},
+    )
+
+    assert response.status_code == 422
+
+
+def test_create_task_single_blank_tag_returns_422(client):
+    response = client.post(
+        "/tasks",
+        json={"title": "Task", "tags": [""]},
+    )
+
+    assert response.status_code == 422
+
+
+def test_create_task_single_whitespace_only_tag_returns_422(client):
+    response = client.post(
+        "/tasks",
+        json={"title": "Task", "tags": ["   "]},
+    )
+
+    assert response.status_code == 422
+
+
+def test_create_task_with_empty_tags_list_returns_201(client):
+    response = client.post("/tasks", json={"title": "Task", "tags": []})
+
     assert response.status_code == 201
-    assert response.json()["tags"] == ["Urgent"]
+    assert response.json()["tags"] == []
+
+
+def test_create_task_with_padded_tag_returns_201_and_stores_trimmed_tag(client):
+    response = client.post("/tasks", json={"title": "Task", "tags": [" bug "]})
+
+    assert response.status_code == 201
+    assert response.json()["tags"] == ["bug"]
 
 
 def test_create_task_duplicate_tags_are_removed(client):
@@ -249,6 +289,58 @@ def test_patch_tags_replaces_existing_list(client):
 
     assert response.status_code == 200
     assert response.json()["tags"] == ["c"]
+
+
+def test_patch_blank_tag_among_valid_tags_returns_422(client):
+    create_response = client.post(
+        "/tasks",
+        json={"title": "Task with tags", "tags": ["backend"]},
+    )
+    task_id = create_response.json()["id"]
+
+    response = client.patch(f"/tasks/{task_id}", json={"tags": ["backend", ""]})
+
+    assert response.status_code == 422
+
+
+def test_patch_whitespace_only_tag_among_valid_tags_returns_422(client):
+    create_response = client.post(
+        "/tasks",
+        json={"title": "Task with tags", "tags": ["backend"]},
+    )
+    task_id = create_response.json()["id"]
+
+    response = client.patch(f"/tasks/{task_id}", json={"tags": ["backend", "   "]})
+
+    assert response.status_code == 422
+
+
+def test_patch_rejected_blank_tag_leaves_stored_tags_unchanged(client):
+    create_response = client.post(
+        "/tasks",
+        json={"title": "Task with tags", "tags": ["backend"]},
+    )
+    task_id = create_response.json()["id"]
+
+    patch_response = client.patch(f"/tasks/{task_id}", json={"tags": ["backend", ""]})
+    assert patch_response.status_code == 422
+
+    fetched = client.get(f"/tasks/{task_id}")
+    assert fetched.status_code == 200
+    assert fetched.json()["tags"] == ["backend"]
+
+
+def test_patch_valid_tags_updates_and_normalizes_stored_tags(client):
+    create_response = client.post(
+        "/tasks",
+        json={"title": "Task with tags", "tags": ["backend"]},
+    )
+    task_id = create_response.json()["id"]
+
+    response = client.patch(f"/tasks/{task_id}", json={"tags": [" Frontend ", "frontend"]})
+
+    assert response.status_code == 200
+    assert response.json()["tags"] == ["Frontend"]
 
 
 def test_list_tasks_overdue_true_returns_overdue_unfinished_task(client):
@@ -437,3 +529,137 @@ def test_list_tasks_overdue_false_combined_with_priority_filter(client):
     body = response.json()
     assert len(body) == 1
     assert body[0]["id"] == high_task["id"]
+
+
+def test_list_tasks_filter_by_tag_returns_only_matching_tasks(client):
+    urgent_response = client.post("/tasks", json={"title": "Urgent task", "tags": ["urgent"]})
+    urgent_task = urgent_response.json()
+    client.post("/tasks", json={"title": "Other task", "tags": ["backend"]})
+
+    response = client.get("/tasks", params={"tag": "urgent"})
+
+    assert response.status_code == 200
+    body = response.json()
+    assert len(body) == 1
+    assert body[0]["id"] == urgent_task["id"]
+
+
+def test_list_tasks_filter_by_tag_is_case_insensitive(client):
+    create_response = client.post("/tasks", json={"title": "Urgent task", "tags": ["Urgent"]})
+    urgent_task = create_response.json()
+
+    response = client.get("/tasks", params={"tag": "URGENT"})
+
+    assert response.status_code == 200
+    body = response.json()
+    assert len(body) == 1
+    assert body[0]["id"] == urgent_task["id"]
+
+
+def test_list_tasks_filter_by_tag_ignores_query_whitespace(client):
+    create_response = client.post("/tasks", json={"title": "Urgent task", "tags": ["urgent"]})
+    urgent_task = create_response.json()
+
+    response = client.get("/tasks", params={"tag": "  urgent  "})
+
+    assert response.status_code == 200
+    body = response.json()
+    assert len(body) == 1
+    assert body[0]["id"] == urgent_task["id"]
+
+
+def test_list_tasks_filter_by_tag_does_not_substring_match(client):
+    client.post("/tasks", json={"title": "Not urgent task", "tags": ["not-urgent"]})
+
+    response = client.get("/tasks", params={"tag": "urgent"})
+
+    assert response.status_code == 200
+    assert response.json() == []
+
+
+def test_list_tasks_filter_by_tag_excludes_tasks_without_tags(client):
+    client.post("/tasks", json={"title": "No tags task"})
+
+    response = client.get("/tasks", params={"tag": "urgent"})
+
+    assert response.status_code == 200
+    assert response.json() == []
+
+
+def test_list_tasks_filter_by_nonexistent_tag_returns_200_and_empty_list(client, created_task):
+    response = client.get("/tasks", params={"tag": "does-not-exist"})
+
+    assert response.status_code == 200
+    assert response.json() == []
+
+
+def test_list_tasks_without_tag_param_preserves_normal_list_behavior(client):
+    client.post("/tasks", json={"title": "Tagged task", "tags": ["urgent"]})
+    client.post("/tasks", json={"title": "Untagged task"})
+
+    response = client.get("/tasks")
+
+    assert response.status_code == 200
+    assert len(response.json()) == 2
+
+
+def test_list_tasks_filter_by_tag_and_status_uses_and_behavior(client):
+    matching_response = client.post(
+        "/tasks",
+        json={"title": "Urgent todo", "status": "ToDo", "tags": ["urgent"]},
+    )
+    matching_task = matching_response.json()
+    client.post(
+        "/tasks",
+        json={"title": "Urgent in progress", "status": "InProgress", "tags": ["urgent"]},
+    )
+    client.post("/tasks", json={"title": "Todo no tag", "status": "ToDo"})
+
+    response = client.get("/tasks", params={"tag": "urgent", "status": "ToDo"})
+
+    assert response.status_code == 200
+    body = response.json()
+    assert len(body) == 1
+    assert body[0]["id"] == matching_task["id"]
+
+
+def test_list_tasks_filter_by_tag_and_priority_uses_and_behavior(client):
+    matching_response = client.post(
+        "/tasks",
+        json={"title": "Urgent high prio", "priority": "High", "tags": ["urgent"]},
+    )
+    matching_task = matching_response.json()
+    client.post(
+        "/tasks",
+        json={"title": "Urgent low prio", "priority": "Low", "tags": ["urgent"]},
+    )
+    client.post("/tasks", json={"title": "High prio no tag", "priority": "High"})
+
+    response = client.get("/tasks", params={"tag": "urgent", "priority": "High"})
+
+    assert response.status_code == 200
+    body = response.json()
+    assert len(body) == 1
+    assert body[0]["id"] == matching_task["id"]
+
+
+def test_list_tasks_filter_by_tag_and_overdue_true_uses_and_behavior(client):
+    yesterday = (date.today() - timedelta(days=1)).isoformat()
+    matching_response = client.post(
+        "/tasks",
+        json={"title": "Urgent overdue", "due_date": yesterday, "tags": ["urgent"]},
+    )
+    matching_task = matching_response.json()
+    tomorrow = (date.today() + timedelta(days=1)).isoformat()
+    client.post(
+        "/tasks",
+        json={"title": "Urgent future", "due_date": tomorrow, "tags": ["urgent"]},
+    )
+    client.post("/tasks", json={"title": "Overdue no tag", "due_date": yesterday})
+
+    response = client.get("/tasks", params={"tag": "urgent", "overdue": "true"})
+
+    assert response.status_code == 200
+    body = response.json()
+    assert len(body) == 1
+    assert body[0]["id"] == matching_task["id"]

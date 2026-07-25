@@ -7,7 +7,7 @@ Validates that status changes follow the allowed workflow.
 from datetime import date
 
 from fastapi import HTTPException, status
-from app.models import TaskResponse, TaskStatus
+from app.models import TaskResponse, TaskStatus, normalize_tag
 
 VALID_TRANSITIONS: frozenset[tuple[TaskStatus, TaskStatus]] = frozenset({
     (TaskStatus.TODO, TaskStatus.IN_PROGRESS),
@@ -46,3 +46,12 @@ def is_task_overdue(task: TaskResponse, today: date) -> bool:
         and task.due_date < today
         and task.status != TaskStatus.DONE
     )
+
+
+def task_has_tag(task: TaskResponse, tag: str) -> bool:
+    """
+    Match a task's tags against a query tag: case-insensitive, whitespace-
+    trimmed, exact match only (no substring matching).
+    """
+    query = normalize_tag(tag)
+    return any(normalize_tag(existing) == query for existing in task.tags)
