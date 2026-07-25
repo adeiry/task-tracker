@@ -477,6 +477,28 @@
         transform: translateY(1px);
       }
 
+      .delete-btn {
+        display: none;
+        margin-right: auto;
+        border: 1px solid var(--danger);
+        background: white;
+        color: var(--danger-text);
+        border-radius: 8px;
+        padding: 8px 12px;
+        font-size: 0.95rem;
+        font-weight: 600;
+        cursor: pointer;
+        transition: background-color var(--fast) var(--ease), transform var(--fast) var(--ease);
+      }
+
+      .delete-btn:hover {
+        background: var(--danger-tint);
+      }
+
+      .delete-btn:active {
+        transform: translateY(1px);
+      }
+
       .filters-row {
         display: flex;
         align-items: center;
@@ -691,6 +713,7 @@
           <div class="form-error" id="task-form-error"></div>
 
           <div class="modal-actions">
+            <button class="delete-btn" id="task-modal-delete" type="button">Delete Task</button>
             <button class="secondary-btn" id="task-modal-cancel" type="button">Cancel</button>
             <button class="action-btn" type="submit">Save</button>
           </div>
@@ -920,6 +943,7 @@
           formError: document.getElementById('task-form-error'),
           cancelButton: document.getElementById('task-modal-cancel'),
           closeButton: document.getElementById('task-modal-close'),
+          deleteButton: document.getElementById('task-modal-delete'),
         };
       }
 
@@ -967,6 +991,9 @@
         if (elements.tagsInput) {
           elements.tagsInput.value = '';
         }
+        if (elements.deleteButton) {
+          elements.deleteButton.style.display = 'none';
+        }
       }
 
       function closeTaskModal() {
@@ -991,6 +1018,10 @@
 
         if (elements.title) {
           elements.title.textContent = mode === 'edit' ? 'Edit Task' : 'New Task';
+        }
+
+        if (elements.deleteButton) {
+          elements.deleteButton.style.display = mode === 'edit' ? 'inline-block' : 'none';
         }
 
         if (mode === 'edit' && task) {
@@ -1173,6 +1204,50 @@
         }
       }
 
+      async function handleDeleteTask() {
+        if (modalState.mode !== 'edit' || !modalState.taskId) {
+          return;
+        }
+
+        const taskId = modalState.taskId;
+        const task = getTaskById(taskId);
+        const taskLabel = task?.title || 'this task';
+
+        const confirmed = window.confirm(`Delete "${taskLabel}"? This cannot be undone.`);
+        if (!confirmed) {
+          return;
+        }
+
+        clearTaskModalErrors();
+
+        try {
+          const response = await fetch(`${BASE_URL}/tasks/${encodeURIComponent(taskId)}`, {
+            method: 'DELETE',
+            headers: {
+              Accept: 'application/json',
+            },
+          });
+
+          if (!response.ok) {
+            let detail = `Request failed with status ${response.status}`;
+            try {
+              const errorPayload = await response.json();
+              detail = extractServerErrorMessage(errorPayload);
+            } catch (parseError) {
+              // no JSON body to parse; keep the status-based message
+            }
+            showTaskFormError(detail);
+            return;
+          }
+
+          closeTaskModal();
+          await fetchTasks();
+        } catch (error) {
+          console.error('Failed to delete task:', error);
+          showTaskFormError('Unable to delete task. Please try again.');
+        }
+      }
+
       async function updateTaskStatus(taskId, targetStatus) {
         const task = getTaskById(taskId);
         if (!task || task.status === targetStatus) {
@@ -1342,6 +1417,7 @@
 
         elements.cancelButton?.addEventListener('click', closeTaskModal);
         elements.closeButton?.addEventListener('click', closeTaskModal);
+        elements.deleteButton?.addEventListener('click', handleDeleteTask);
 
         elements.overlay?.addEventListener('click', (event) => {
           if (event.target === elements.overlay) {
