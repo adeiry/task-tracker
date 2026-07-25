@@ -557,3 +557,99 @@ Manually verified that:
 - Selecting a tag displayed only matching tasks.
 - Clearing the filter restored the complete task list.
 - Status, priority, and overdue filters continued to work correctly alongside the new tag filter.
+
+---
+
+## Prompt 16 — Frontend Task Deletion
+
+### Tool 
+Claude Code
+
+### Goal 
+Expose the existing backend task deletion functionality in the frontend.
+
+### Prompt
+
+> Inspect the existing task deletion implementation before making changes.
+>
+> The FastAPI backend already has a DELETE task endpoint and existing pytest coverage.
+>
+> Inspect the frontend and determine whether users can currently delete tasks from the UI.
+>
+> If deletion is missing from the frontend, implement it with these requirements:
+>
+> - Add a clearly labeled Delete action to the edit modal or task card.
+> - Ask for confirmation before deleting.
+> - Call the existing DELETE endpoint.
+> - Remove the task from the board after a successful response.
+> - Show a clear error message if deletion fails.
+> - Close the modal after successful deletion.
+> - Preserve all existing create, edit, drag-and-drop, due-date, tag, and filter behavior.
+>
+> Constraints:
+>
+> - Do not modify backend deletion behavior unless a real defect is found.
+> - Do not add new dependencies.
+> - Do not refactor unrelated code.
+> - Do not remove existing tests.
+>
+> After editing, summarize the changes and provide a manual verification checklist.
+
+### Outcome
+
+The frontend was updated to expose the existing task deletion functionality. A delete action, confirmation step, API integration, UI update, and failure handling were added.
+
+### Verification
+
+- Created and deleted a temporary task
+- Confirmed the task disappeared from the board
+- Confirmed other tasks were not affected
+- Confirmed failed deletion requests display an error
+- Reran the backend test suite
+
+---
+
+## Prompt 17 — Frontend Polish
+
+### Tool 
+Claude Code
+
+### Goal 
+Improve the frontend presentation without changing application behavior.
+
+### Prompt
+
+> Polish the existing Task Tracker frontend without changing application behavior.
+>
+> Goals:
+>
+> - Make the interface feel more modern and consistent.
+> - Improve spacing, typography, button states, task cards, filters, tags, due dates, and overdue indicators.
+> - Add subtle hover and modal animations.
+> - Improve drag-and-drop visual feedback.
+> - Keep the current layout and functionality.
+> - Preserve accessibility and readable contrast.
+>
+> Constraints:
+>
+> - Do not change backend code.
+> - Do not add a frontend framework or external animation library.
+> - Do not change API requests.
+> - Do not remove or rename existing elements used by JavaScript.
+> - Do not refactor unrelated logic.
+> - Keep animations subtle and fast.
+> - Review the existing HTML, CSS, and JavaScript before editing.
+>
+> After editing, summarize the visual changes and confirm that no functionality was intentionally changed.
+
+### Outcome
+
+The frontend styling was improved while preserving the existing application behavior. Task cards, buttons, filters, forms, tags, due dates, states, and drag-and-drop feedback were refined.
+
+### Verification
+
+- Manually tested all core workflows
+- Verified due-date and tag functionality
+- Verified task deletion
+- Verified loading, empty, populated, and error states
+- Reran the complete backend test suite

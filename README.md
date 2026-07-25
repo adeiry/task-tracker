@@ -40,6 +40,30 @@ A lightweight Task Tracker application built with **FastAPI**, **Pydantic**, and
 
 ---
 
+## Extra Improvements
+
+After completing the required mid-course features, additional improvements were made to strengthen the usability and presentation of the application.
+
+### Frontend Task Deletion
+
+- Added a Delete action to the frontend
+- Added confirmation before deleting a task
+- Connected the frontend action to the existing backend DELETE endpoint
+- Added error handling for failed deletion requests
+- Verified that deleted tasks are removed from the Kanban board
+
+### Frontend Polish
+
+- Improved task-card styling and spacing
+- Added subtle hover and transition effects
+- Improved button and form states
+- Improved drag-and-drop visual feedback
+- Improved tag and due-date presentation
+- Improved empty and error states
+- Preserved the existing application behavior and API integration
+
+---
+
 ## Architecture
 
 The project follows a simple layered architecture designed for learning purposes.

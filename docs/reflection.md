@@ -40,3 +40,13 @@ This project reinforced the importance of:
 - writing tests for new features
 - verifying behavior manually
 - using AI as a development assistant rather than replacing developer judgment
+
+## Additional Work
+
+After completing the required project features, I added two optional improvements.
+
+First, I exposed the existing backend task deletion functionality in the frontend. This completed the CRUD workflow from the user interface and required confirmation handling, API integration, UI updates, and error handling.
+
+Second, I completed a focused frontend-polish pass. I improved task cards, spacing, buttons, filters, form states, tag and due-date presentation, and drag-and-drop feedback. I intentionally avoided adding a new framework or changing backend behavior so that the improvements remained low-risk and within the project scope.
+
+These additions improved the usability and presentation of the application while preserving the tested backend behavior.
