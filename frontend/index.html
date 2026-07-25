@@ -181,6 +181,20 @@
         color: var(--muted);
       }
 
+      .due-date {
+        color: var(--muted);
+        font-size: 0.85rem;
+      }
+
+      .due-date.overdue {
+        color: #b91c1c;
+        font-weight: 600;
+      }
+
+      .card.overdue {
+        border-color: #dc2626;
+      }
+
       .card-actions {
         display: flex;
         justify-content: flex-end;
@@ -316,6 +330,21 @@
         background: #f8fafc;
       }
 
+      .filters-row {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        margin-bottom: 16px;
+        font-size: 0.95rem;
+      }
+
+      .filters-row label {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        cursor: pointer;
+      }
+
       @media (max-width: 900px) {
         .board {
           grid-template-columns: 1fr;
@@ -339,6 +368,13 @@
           <button class="action-btn" id="new-task-btn" type="button">New Task</button>
         </div>
       </header>
+
+      <div class="filters-row">
+        <label for="overdue-filter-toggle">
+          <input type="checkbox" id="overdue-filter-toggle" />
+          Show overdue only
+        </label>
+      </div>
 
       <section class="board" aria-label="Task board">
         <section class="column" data-status="ToDo">
@@ -446,6 +482,11 @@
             <input id="task-assignee" name="assignee" type="text" />
           </div>
 
+          <div class="form-field">
+            <label for="task-due-date">Due Date</label>
+            <input id="task-due-date" name="due_date" type="date" />
+          </div>
+
           <div class="form-error" id="task-form-error"></div>
 
           <div class="modal-actions">
@@ -467,6 +508,7 @@
       let boardStateEl = null;
       let dragState = { taskId: null, previousStatus: null };
       let modalState = { mode: 'create', taskId: null };
+      let showOverdueOnly = false;
 
       function escapeHtml(value) {
         return String(value ?? '')
@@ -479,6 +521,21 @@
 
       function getTaskById(taskId) {
         return tasks.find((task) => String(task.id) === String(taskId)) ?? null;
+      }
+
+      function getTodayDateString() {
+        const now = new Date();
+        const year = now.getFullYear();
+        const month = String(now.getMonth() + 1).padStart(2, '0');
+        const day = String(now.getDate()).padStart(2, '0');
+        return `${year}-${month}-${day}`;
+      }
+
+      function isTaskOverdue(task) {
+        if (!task.due_date || task.status === 'Done') {
+          return false;
+        }
+        return task.due_date < getTodayDateString();
       }
 
       function clearDragState() {
@@ -502,6 +559,7 @@
       function getTasksForStatus(status) {
         return tasks
           .filter((task) => task.status === status)
+          .filter((task) => !showOverdueOnly || isTaskOverdue(task))
           .slice()
           .sort(compareTasks);
       }
@@ -517,6 +575,14 @@
         const priority = escapeHtml(task.priority || 'Medium');
         const assignee = escapeHtml(task.assignee || 'Unassigned');
         const priorityClass = priority.toLowerCase();
+        const overdue = isTaskOverdue(task);
+        const dueDateHtml = task.due_date
+          ? `<div class="due-date${overdue ? ' overdue' : ''}">Due ${escapeHtml(task.due_date)}${overdue ? ' · Overdue' : ''}</div>`
+          : '';
+
+        if (overdue) {
+          card.classList.add('overdue');
+        }
 
         card.innerHTML = `
           <div class="card-title">${title}</div>
@@ -525,6 +591,7 @@
             <span class="priority ${priorityClass}">${priority}</span>
             <span class="assignee">${assignee}</span>
           </div>
+          ${dueDateHtml}
           <div class="card-actions">
             <button class="edit-btn" type="button">Edit</button>
           </div>
@@ -635,6 +702,7 @@
           statusInput: document.getElementById('task-status'),
           priorityInput: document.getElementById('task-priority'),
           assigneeInput: document.getElementById('task-assignee'),
+          dueDateInput: document.getElementById('task-due-date'),
           titleError: document.getElementById('task-title-error'),
           formError: document.getElementById('task-form-error'),
           cancelButton: document.getElementById('task-modal-cancel'),
@@ -680,6 +748,9 @@
         if (elements.assigneeInput) {
           elements.assigneeInput.value = '';
         }
+        if (elements.dueDateInput) {
+          elements.dueDateInput.value = '';
+        }
       }
 
       function closeTaskModal() {
@@ -724,6 +795,9 @@
           }
           if (elements.assigneeInput) {
             elements.assigneeInput.value = task.assignee || '';
+          }
+          if (elements.dueDateInput) {
+            elements.dueDateInput.value = task.due_date || '';
           }
         }
 
@@ -782,6 +856,7 @@
         const status = elements.statusInput?.value || 'ToDo';
         const priority = elements.priorityInput?.value || 'Medium';
         const assignee = elements.assigneeInput?.value.trim() ? elements.assigneeInput.value.trim() : null;
+        const dueDate = elements.dueDateInput?.value || null;
 
         const isEdit = modalState.mode === 'edit' && modalState.taskId;
         const currentTask = isEdit ? getTaskById(modalState.taskId) : null;
@@ -791,6 +866,7 @@
           status,
           priority,
           assignee,
+          due_date: dueDate,
         };
 
         if (isEdit && currentTask) {
@@ -800,6 +876,7 @@
           const currentStatus = currentTask.status || 'ToDo';
           const currentPriority = currentTask.priority || 'Medium';
           const currentAssignee = currentTask.assignee ?? null;
+          const currentDueDate = currentTask.due_date ?? null;
 
           if (title !== currentTitle) {
             patchPayload.title = title;
@@ -815,6 +892,9 @@
           }
           if (assignee !== currentAssignee) {
             patchPayload.assignee = assignee;
+          }
+          if (dueDate !== currentDueDate) {
+            patchPayload.due_date = dueDate;
           }
 
           payload = patchPayload;
@@ -1065,9 +1145,17 @@
         });
       }
 
+      function bindFilterHandlers() {
+        document.getElementById('overdue-filter-toggle')?.addEventListener('change', (event) => {
+          showOverdueOnly = event.target.checked;
+          renderBoard(tasks);
+        });
+      }
+
       document.addEventListener('DOMContentLoaded', () => {
         bindColumnDropHandlers();
         bindModalHandlers();
+        bindFilterHandlers();
         fetchTasks();
       });
     </script>
