@@ -48,8 +48,9 @@ def health_check() -> dict:
 def list_tasks(
     status: TaskStatus | None = None,
     priority: TaskPriority | None = None,
+    overdue: bool | None = None,
 ) -> list[TaskResponse]:
-    return storage.get_all_tasks(status=status, priority=priority)
+    return storage.get_all_tasks(status=status, priority=priority, overdue=overdue)
 
 
 @app.post("/tasks", response_model=TaskResponse, status_code=status.HTTP_201_CREATED, tags=["tasks"])
