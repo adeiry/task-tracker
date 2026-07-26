@@ -1,7 +1,8 @@
 import uuid
-from datetime import datetime, timezone
+from datetime import date, datetime, timezone
 from typing import Optional
 
+from app.business_rules import is_task_overdue, task_has_tag
 from app.models import TaskCreate, TaskPriority, TaskResponse, TaskStatus, TaskUpdate
 
 _tasks: dict[str, TaskResponse] = {}
@@ -29,12 +30,19 @@ def add_task(payload: TaskCreate) -> TaskResponse:
 def get_all_tasks(
     status: Optional[TaskStatus] = None,
     priority: Optional[TaskPriority] = None,
+    overdue: Optional[bool] = None,
+    tag: Optional[str] = None,
 ) -> list[TaskResponse]:
     tasks = list(_tasks.values())
     if status is not None:
         tasks = [task for task in tasks if task.status == status]
     if priority is not None:
         tasks = [task for task in tasks if task.priority == priority]
+    if overdue is not None:
+        today = date.today()
+        tasks = [task for task in tasks if is_task_overdue(task, today) == overdue]
+    if tag is not None:
+        tasks = [task for task in tasks if task_has_tag(task, tag)]
     return tasks
 
 

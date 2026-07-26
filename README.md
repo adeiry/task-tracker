@@ -35,7 +35,7 @@ A lightweight Task Tracker application built with **FastAPI**, **Pydantic**, and
 - Create and edit tags
 - Automatic tag normalization
 - Duplicate tag removal
-- Empty tag removal
+- Blank tag validation (rejects empty or whitespace-only tags)
 - Tag filtering
 
 ---
@@ -92,11 +92,12 @@ task-tracker/
 ├── frontend/
 ├── tests/
 ├── docs/
-│   ├── mini-adr.md
-│   ├── prompt-log.md
-│   ├── reflection.md
-│   ├── user-stories.md
-│   └── verification.md
+│   └── midcourse/
+│       ├── mini-adr.md
+│       ├── prompt-log.md
+│       ├── reflection.md
+│       ├── user-stories.md
+│       └── verification.md
 ├── README.md
 ├── requirements.txt
 └── ...
@@ -116,7 +117,7 @@ task-tracker/
 Clone the repository:
 
 ```bash
-git clone <repository-url>
+git clone https://github.com/adeiry/task-tracker.git
 cd task-tracker
 ```
 
@@ -142,20 +143,6 @@ Install the required dependencies:
 pip install -r requirements.txt
 ```
 
-Copy the example environment file:
-
-### macOS / Linux
-
-```bash
-cp .env.example .env
-```
-
-### Windows
-
-```powershell
-Copy-Item .env.example .env
-```
-
 ---
 
 ## Running the Backend
@@ -176,9 +163,13 @@ http://127.0.0.1:8000
 
 ## Running the Frontend
 
-Open the `frontend` folder using **VS Code Live Server** (or another simple local web server).
+Open the `frontend/index.html` file in a web browser (for example, Google Chrome).
 
-The frontend communicates with the backend running on port **8000**.
+Ensure the backend server is running on port **8000**. The frontend sends requests to the API at:
+
+```text
+http://127.0.0.1:8000
+```
 
 ---
 
@@ -240,19 +231,19 @@ All AI-generated code and recommendations were reviewed, tested, and validated b
 
 The complete AI interaction history is documented in:
 
-- `docs/prompt-log.md`
+- `docs/midcourse/prompt-log.md`
 
 ---
 
 ## Project Documentation
 
-Additional project documentation is available in the `docs` directory:
+Additional project documentation is available in the `docs/midcourse/` directory:
 
-- User Stories
-- Mini Architecture Decision Record (ADR)
-- AI Prompt Log
-- Verification Report
-- Project Reflection
+- `user-stories.md`
+- `mini-adr.md`
+- `prompt-log.md`
+- `verification.md`
+- `reflection.md`
 
 ---
 

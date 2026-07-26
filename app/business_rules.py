@@ -4,8 +4,10 @@ Business rules for task status transitions.
 Validates that status changes follow the allowed workflow.
 """
 
+from datetime import date
+
 from fastapi import HTTPException, status
-from app.models import TaskStatus
+from app.models import TaskResponse, TaskStatus, normalize_tag
 
 VALID_TRANSITIONS: frozenset[tuple[TaskStatus, TaskStatus]] = frozenset({
     (TaskStatus.TODO, TaskStatus.IN_PROGRESS),
@@ -22,14 +24,28 @@ def validate_status_transition(current: TaskStatus, new: TaskStatus) -> None:
     """
     allowed = sorted({f"{f.value}->{t.value}" for f, t in VALID_TRANSITIONS})
 
-    if current == new:
+    if current == new or (current, new) not in VALID_TRANSITIONS:
         raise HTTPException(
             status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
             detail=f"Invalid status transition from {current.value} to {new.value}. Allowed transitions: {allowed}",
         )
 
-    if (current, new) not in VALID_TRANSITIONS:
-        raise HTTPException(
-            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
-            detail=f"Invalid status transition from {current.value} to {new.value}. Allowed transitions: {allowed}",
-        )
+
+def is_task_overdue(task: TaskResponse, today: date) -> bool:
+    """
+    A task is overdue when it has a due date earlier than today and is not Done.
+    """
+    return (
+        task.due_date is not None
+        and task.due_date < today
+        and task.status != TaskStatus.DONE
+    )
+
+
+def task_has_tag(task: TaskResponse, tag: str) -> bool:
+    """
+    Match a task's tags against a query tag: case-insensitive, whitespace-
+    trimmed, exact match only (no substring matching).
+    """
+    query = normalize_tag(tag)
+    return any(normalize_tag(existing) == query for existing in task.tags)

@@ -17,14 +17,18 @@ class TaskPriority(str, Enum):
     HIGH = "High"
 
 
+def normalize_tag(value: str) -> str:
+    return value.strip().lower()
+
+
 def _normalize_tags(tags: list[str]) -> list[str]:
     normalized: list[str] = []
     seen: set[str] = set()
     for tag in tags:
         cleaned = tag.strip()
         if not cleaned:
-            continue
-        key = cleaned.lower()
+            raise ValueError("tags cannot be blank")
+        key = normalize_tag(tag)
         if key in seen:
             continue
         seen.add(key)

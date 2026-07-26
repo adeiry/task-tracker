@@ -37,6 +37,12 @@ As a team member, I want to filter the board to show overdue tasks so that I can
 - Disabling the filter restores the normal task list.
 - The filter works together with the existing board states.
 
+# AI Assumption Corrected
+
+The AI assumed that `overdue=false` could be treated the same as an omitted `overdue` query parameter, because only the `overdue=true` behavior had originally been specified. Under that assumption, an implementation could satisfy every stated requirement while still returning every task for `overdue=false` instead of only non-overdue ones.
+
+I corrected this assumption by explicitly requiring `overdue=false` to return the logical complement of `overdue=true` — future due dates, due-today, no due date, and Done tasks with a past due date. The implementation and its automated tests were updated accordingly.
+
 ---
 
 ## Feature 2: Tags
@@ -74,3 +80,9 @@ As a team member, I want to filter tasks by tag so that I can focus on a specifi
 - Selecting a tag shows only tasks containing that tag.
 - Clearing the filter shows all tasks again.
 - The tag filter works with the existing status and priority behavior.
+
+# AI Assumption Corrected
+
+The AI interpreted the instruction to "ignore empty tags" as silently removing blank tags during normalization, so a payload like `["bug", ""]` was accepted and stored as `["bug"]`.
+
+I corrected this assumption by requiring blank or whitespace-only tags to be rejected with HTTP 422 instead of being silently removed, both on task creation and on task updates. The implementation and its automated tests were updated accordingly.
