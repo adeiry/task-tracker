@@ -765,3 +765,112 @@ Claude performed a focused refactor of the business rules, improving code readab
 - Executed the behavior contract before and after the refactor.
 - Performed manual API verification of status transitions and overdue filtering.
 - Reran the complete pytest suite successfully.
+
+---
+
+## Prompt Improvement Example
+
+### Original Prompt
+
+> Inspect the existing FastAPI Task Tracker repository and fix only the missing backend overdue filter.
+>
+> Current defect:
+>
+> GET /tasks?overdue=true is silently ignored because the GET /tasks endpoint does not accept an overdue query parameter. It currently returns every task.
+>
+> Required behavior:
+>
+> * The GET /tasks endpoint must explicitly accept an optional Boolean query parameter named `overdue`.
+> * When `overdue=true`, return only tasks that are overdue.
+> * A task is overdue when:
+>
+>   * it has a due date;
+>   * its due date is earlier than today; and
+>   * its status is not Done.
+>
+> * Tasks with no due date must not be returned.
+> * Tasks due today must not be considered overdue.
+> * Future tasks must not be returned.
+> * Done tasks must not be returned, even when their due date is in the past.
+> * Existing status and priority filtering must continue to work.
+> * Do not implement the tag filter yet.
+> * Do not change frontend code.
+> * Do not modify unrelated behavior.
+>
+> Testing requirements:
+>
+> Add focused pytest coverage proving that:
+>
+> 1. An overdue unfinished task is returned.
+> 2. A future task is excluded.
+> 3. A task due today is excluded.
+> 4. A task without a due date is excluded.
+> 5. A Done task with a past due date is excluded.
+> 6. A request without `overdue=true` preserves the existing list behavior.
+> 7. Existing status and priority filters still work.
+
+### Why It Was Weak
+
+The prompt fully defined the behavior for `overdue=true` but never described how `overdue=false` should behave as a distinct case — it only distinguished "true" from "omitted." Read literally, this allowed a correct-looking implementation (`if overdue: ...`, a truthy check) that satisfied every stated requirement while still treating an explicit `overdue=false` exactly like an omitted parameter. That gap shipped as a real defect: `GET /tasks?overdue=false` returned every task instead of only non-overdue ones.
+
+### Improved Prompt
+
+> Inspect the existing FastAPI Task Tracker implementation and correct the Boolean behavior of the `overdue` query parameter.
+>
+> Current defect:
+>
+> `GET /tasks?overdue=false` currently returns every task because the endpoint only applies filtering when `overdue is True`.
+>
+> Required behavior:
+>
+> ### No overdue parameter
+>
+> ```text
+> GET /tasks
+> ```
+>
+> Return all tasks, subject only to any other provided filters such as status or priority.
+>
+> ### overdue=true
+>
+> ```text
+> GET /tasks?overdue=true
+> ```
+>
+> Return only overdue tasks.
+>
+> A task is overdue when all of these conditions are true:
+>
+> * It has a due date.
+> * Its due date is earlier than today.
+> * Its status is not Done.
+>
+> ### overdue=false
+>
+> ```text
+> GET /tasks?overdue=false
+> ```
+>
+> Return only tasks that are not overdue.
+>
+> This includes:
+>
+> - Tasks with future due dates.
+> - Tasks due today.
+> - Tasks without a due date.
+> - Done tasks, including Done tasks whose due date is in the past.
+>
+> In other words, `overdue=false` must return the logical opposite of the `overdue=true` rule, not the full unfiltered task list.
+
+### Result
+
+The improved prompt named the defect explicitly and required the omitted, `overdue=true`, and `overdue=false` cases to be treated as three distinct, fully-specified behaviors instead of two. This removed the ambiguity that had let the first implementation pass its own requirements while still being wrong.
+
+The corrected implementation replaced the truthy check with an explicit `overdue is not None` check, and filtered tasks by comparing `is_task_overdue(task, today) == overdue`, so `overdue=true` and `overdue=false` are provable logical complements of the same rule rather than two independently-coded branches. Additional pytest coverage was added for the `overdue=false` case and for combined filtering (`overdue` with `status` and `priority`), and the full suite was rerun to confirm no regressions.
+
+### What I Accepted, Edited, or Rejected
+
+- **AI returned:** An implementation that correctly handled `overdue=true` but treated `overdue=false` the same as an omitted parameter because the original prompt did not distinguish those cases.
+- **Accepted:** The overdue calculation rule (`due_date < today` and `status != Done`) and the overall filtering approach.
+- **Rejected:** The assumption that `overdue=false` should behave the same as an omitted query parameter.
+- **Edited:** The prompt to explicitly define the three query parameter states (omitted, `overdue=true`, and `overdue=false`) and updated the implementation to make `overdue=false` the logical complement of `overdue=true`.
