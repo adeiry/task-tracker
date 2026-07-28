@@ -17,10 +17,25 @@ VALID_TRANSITIONS: frozenset[tuple[TaskStatus, TaskStatus]] = frozenset({
 
 
 def validate_status_transition(current: TaskStatus, new: TaskStatus) -> None:
-    """
-    Validate that a status transition is allowed.
+    """Validate that a status transition is allowed.
 
-    Raises HTTPException with 422 Unprocessable Entity if the transition is invalid.
+    Args:
+        current (TaskStatus): The task's current status.
+        new (TaskStatus): The requested new status.
+
+    Returns:
+        None: Returns nothing if the transition is allowed.
+
+    Raises:
+        HTTPException: 422 if ``current == new`` (a same-status
+            "transition" is always rejected, not treated as a no-op), or
+            if ``(current, new)`` is not one of the pairs in
+            ``VALID_TRANSITIONS`` (``ToDo``→``InProgress``,
+            ``InProgress``→``Done``, ``Done``→``InProgress``).
+
+    Example:
+        validate_status_transition(TaskStatus.TODO, TaskStatus.IN_PROGRESS)
+        # Returns None; the transition is allowed.
     """
     allowed = sorted({f"{f.value}->{t.value}" for f, t in VALID_TRANSITIONS})
 
@@ -32,8 +47,21 @@ def validate_status_transition(current: TaskStatus, new: TaskStatus) -> None:
 
 
 def is_task_overdue(task: TaskResponse, today: date) -> bool:
-    """
-    A task is overdue when it has a due date earlier than today and is not Done.
+    """Determine whether a task counts as overdue.
+
+    A task is overdue when it has a due date, that due date is strictly
+    earlier than ``today``, and its status is not ``Done``.
+
+    Args:
+        task (TaskResponse): The task to evaluate.
+        today (date): The reference date to compare ``task.due_date``
+            against. Callers (e.g. ``storage.get_all_tasks``) typically
+            pass ``date.today()``.
+
+    Returns:
+        bool: ``True`` if the task is overdue, ``False`` otherwise
+        (including when ``task.due_date`` is ``None``, when it equals
+        ``today``, or when ``task.status`` is ``Done``).
     """
     return (
         task.due_date is not None
@@ -43,9 +71,20 @@ def is_task_overdue(task: TaskResponse, today: date) -> bool:
 
 
 def task_has_tag(task: TaskResponse, tag: str) -> bool:
-    """
-    Match a task's tags against a query tag: case-insensitive, whitespace-
-    trimmed, exact match only (no substring matching).
+    """Check whether a task has a tag matching the given query.
+
+    Matching is case-insensitive and ignores leading/trailing whitespace
+    on both sides, and requires an exact match after normalization (no
+    substring matching).
+
+    Args:
+        task (TaskResponse): The task to check.
+        tag (str): The query tag to match against ``task.tags``.
+
+    Returns:
+        bool: ``True`` if any of ``task.tags`` matches ``tag`` after
+        normalization, ``False`` otherwise (including when ``task.tags``
+        is empty).
     """
     query = normalize_tag(tag)
     return any(normalize_tag(existing) == query for existing in task.tags)
