@@ -78,7 +78,6 @@ The project intentionally excludes:
 
 - Authentication
 - Database integration
-- Docker
 - Cloud deployment
 - Real-time updates
 
@@ -157,6 +156,34 @@ The API will be available at:
 
 ```
 http://127.0.0.1:8000
+```
+
+---
+
+## Running with Docker
+
+Build the image:
+
+```bash
+docker build -t task-tracker .
+```
+
+Run the container:
+
+```bash
+docker run -d --name task-tracker -p 8000:8000 task-tracker
+```
+
+The API will be available at the same URL as the local backend:
+
+```
+http://127.0.0.1:8000
+```
+
+Verify it's running:
+
+```bash
+curl http://127.0.0.1:8000/health
 ```
 
 ---
