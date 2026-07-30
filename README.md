@@ -1,117 +1,51 @@
 # Task Tracker
 
-A lightweight Task Tracker application built with **FastAPI**, **Pydantic**, and a **vanilla JavaScript Kanban board**. This project was developed as part of an AI-Assisted Coding course to practice REST API development, frontend integration, automated testing, documentation, and AI-assisted software development workflows.
+A lightweight Task Tracker REST API built with **FastAPI** and **Pydantic**, plus a **vanilla JavaScript Kanban board** frontend. This project was developed as part of an AI-Assisted Coding course (through Module 4) to practice REST API design, containerization, CI, automated testing, and AI-assisted development workflows.
+
+This is a learning project, **not** a production service: there is no authentication, no persistent database (all data lives in memory and resets on restart), and no deployment configuration beyond running the provided Docker image locally.
 
 ---
 
-## Features
+## Project Overview
 
 ### Core Features
 
-- Create tasks
-- View tasks in a Kanban board
-- Edit existing tasks
-- Delete tasks
+- Create, view, edit, and delete tasks
+- Kanban board with drag-and-drop status changes
 - Status transitions (To Do → In Progress → Done)
-- Drag-and-drop task movement
 - Priority levels (Low, Medium, High)
-- Status filtering
-- Priority filtering
+- Status and priority filtering (`GET /tasks?status=`, `GET /tasks?priority=`)
 
-### Mid-Course Project Features
-
-#### Due Dates
+### Due Dates
 
 - Optional due dates for tasks
 - Edit and remove due dates
-- Display due dates on task cards
-- Automatic overdue detection
-- Overdue highlighting
-- Overdue task filtering
+- Automatic overdue detection and highlighting
+- Overdue filtering (`GET /tasks?overdue=true|false`)
 
-#### Tags
+### Tags
 
 - Multiple tags per task
-- Create and edit tags
-- Automatic tag normalization
-- Duplicate tag removal
-- Blank tag validation (rejects empty or whitespace-only tags)
-- Tag filtering
+- Automatic tag normalization (trimmed, case-insensitive de-duplication)
+- Blank or whitespace-only tags are rejected (HTTP 422), not silently dropped
+- Tag filtering (`GET /tasks?tag=`)
 
----
+### Extra Improvements
 
-## Extra Improvements
-
-After completing the required mid-course features, additional improvements were made to strengthen the usability and presentation of the application.
-
-### Frontend Task Deletion
-
-- Added a Delete action to the frontend
-- Added confirmation before deleting a task
-- Connected the frontend action to the existing backend DELETE endpoint
-- Added error handling for failed deletion requests
-- Verified that deleted tasks are removed from the Kanban board
-
-### Frontend Polish
-
-- Improved task-card styling and spacing
-- Added subtle hover and transition effects
-- Improved button and form states
-- Improved drag-and-drop visual feedback
-- Improved tag and due-date presentation
-- Improved empty and error states
-- Preserved the existing application behavior and API integration
-
----
-
-## Architecture
-
-The project follows a simple layered architecture designed for learning purposes.
-
-- **FastAPI** – REST API framework
-- **Pydantic** – Request and response validation
-- **In-memory storage** – Lightweight task storage during application runtime
-- **Vanilla JavaScript** – Frontend Kanban board
-- **Pytest** – Automated backend testing
-
-The project intentionally excludes:
-
-- Authentication
-- Database integration
-- Cloud deployment
-- Real-time updates
-
----
-
-## Project Structure
-
-```text
-task-tracker/
-├── app/
-├── frontend/
-├── tests/
-├── docs/
-│   └── midcourse/
-│       ├── mini-adr.md
-│       ├── prompt-log.md
-│       ├── reflection.md
-│       ├── user-stories.md
-│       └── verification.md
-├── README.md
-├── requirements.txt
-└── ...
-```
+- Frontend delete action (with confirmation) wired to the existing backend `DELETE` endpoint
+- Frontend visual polish (card/button/drag-and-drop states, loading/empty/error states)
 
 ---
 
 ## Prerequisites
 
-- Python 3.10 or later
+- Python 3.11 (this is what CI and the Docker image actually run; the code's `X | None` type hints require at least Python 3.10 to import)
 - pip
+- Docker, only if you want to run the containerized version (see [Run with Docker](#run-with-docker))
 
 ---
 
-## Installation
+## Local Setup
 
 Clone the repository:
 
@@ -120,23 +54,23 @@ git clone https://github.com/adeiry/task-tracker.git
 cd task-tracker
 ```
 
-Create and activate a virtual environment.
+Create and activate a virtual environment:
 
-### macOS / Linux
+**macOS / Linux**
 
 ```bash
 python3 -m venv venv
 source venv/bin/activate
 ```
 
-### Windows (PowerShell)
+**Windows (PowerShell)**
 
 ```powershell
 python -m venv venv
 .\venv\Scripts\Activate.ps1
 ```
 
-Install the required dependencies:
+Install dependencies:
 
 ```bash
 pip install -r requirements.txt
@@ -144,23 +78,51 @@ pip install -r requirements.txt
 
 ---
 
-## Running the Backend
+## Run the App Locally
 
-Start the FastAPI development server:
+With the virtual environment active, from the repo root:
 
 ```bash
-python -m uvicorn app.main:app --reload --port 8000
+uvicorn app.main:app --reload --port 8000
 ```
 
-The API will be available at:
+The API is now available at `http://127.0.0.1:8000`.
+
+Verify it's running:
+
+```bash
+curl http://127.0.0.1:8000/health
+```
+
+Interactive API docs (Swagger UI):
 
 ```
-http://127.0.0.1:8000
+http://127.0.0.1:8000/docs
+```
+
+### Running the Frontend
+
+Open `frontend/index.html` directly in a browser, with the backend running on port 8000 (the frontend's `BASE_URL` is hardcoded to `http://localhost:8000`).
+
+---
+
+## Run Tests
+
+With the virtual environment active, from the repo root:
+
+```bash
+pytest -v
+```
+
+`tests/verify_a.py` is a separate, ad hoc manual verification script (prints `PASS`/`FAIL` to stdout) for Pydantic model edge cases — it is not part of the pytest suite and is run directly:
+
+```bash
+python tests/verify_a.py
 ```
 
 ---
 
-## Running with Docker
+## Run with Docker
 
 Build the image:
 
@@ -174,7 +136,7 @@ Run the container:
 docker run -d --name task-tracker -p 8000:8000 task-tracker
 ```
 
-The API will be available at the same URL as the local backend:
+The API is available at the same URL as the local backend:
 
 ```
 http://127.0.0.1:8000
@@ -186,91 +148,86 @@ Verify it's running:
 curl http://127.0.0.1:8000/health
 ```
 
+The image is a multi-stage build (`python:3.11-slim`), installs dependencies from prebuilt wheels, and runs as a non-root `app` user. `CMD` runs `uvicorn app.main:app --host 0.0.0.0 --port 8000` — no `--reload` in the container.
+
 ---
 
-## Running the Frontend
+## CI Workflow
 
-Open the `frontend/index.html` file in a web browser (for example, Google Chrome).
+Defined in `.github/workflows/ci.yml`:
 
-Ensure the backend server is running on port **8000**. The frontend sends requests to the API at:
+- **Triggers:** every `push` and every `pull_request` (no branch filter configured — this applies to all branches).
+- **Job:** a single `test` job on `ubuntu-latest`.
+- **Steps:** checkout → set up Python `3.11` → `pip install -r requirements.txt` → `pytest -v`.
+
+You can reproduce the CI job locally with the same [Local Setup](#local-setup) and [Run Tests](#run-tests) commands above. CI does not build or run the Docker image, and there is no configured lint/format step.
+
+---
+
+## Project Structure
 
 ```text
-http://127.0.0.1:8000
+task-tracker/
+├── .github/
+│   └── workflows/
+│       └── ci.yml
+├── app/
+│   ├── main.py            # FastAPI app instance and all route handlers
+│   ├── models.py          # Pydantic models: TaskCreate, TaskUpdate, TaskResponse, enums
+│   ├── storage.py          # In-memory task store
+│   ├── business_rules.py  # Status-transition, overdue, and tag-matching rules
+│   ├── api/                # Empty placeholder package
+│   ├── repositories/       # Empty placeholder package
+│   └── services/           # Empty placeholder package
+├── frontend/
+│   └── index.html          # Self-contained Kanban board UI (no build step)
+├── tests/
+│   ├── conftest.py
+│   ├── test_tasks.py
+│   └── verify_a.py          # Ad hoc manual verification script (not run via pytest)
+├── docs/
+│   └── midcourse/
+│       ├── mini-adr.md
+│       ├── prompt-log.md
+│       ├── reflection.md
+│       ├── user-stories.md
+│       └── verification.md
+├── Dockerfile
+├── .dockerignore
+├── requirements.txt
+├── CLAUDE.md
+└── README.md
 ```
 
 ---
 
-## API Documentation
+## Project Conventions and Current Limitations
 
-Once the backend is running, open:
-
-```
-http://127.0.0.1:8000/docs
-```
-
-Swagger UI provides interactive API documentation for all available endpoints.
-
----
-
-## Health Check
-
-Verify that the API is running:
-
-```bash
-curl http://127.0.0.1:8000/health
-```
-
-Example response:
-
-```json
-{
-  "status": "ok",
-  "timestamp": "2026-07-03T12:00:00.000000+00:00"
-}
-```
+- **No router/service layer.** All route handlers live in `app/main.py` and call directly into `app/storage.py` and `app/business_rules.py`. `app/api/`, `app/repositories/`, and `app/services/` are empty placeholder packages reserved for future structure but currently unused.
+- **In-memory storage only.** `app/storage.py` holds tasks in a module-level dict keyed by UUID; all data is lost on restart. There is no database.
+- **No authentication.** `CORSMiddleware` is configured with `allow_origins=["*"]` — this is intentionally permissive for local learning use, not appropriate as-is beyond that.
+- **Duplicated title validation.** `TaskCreate` and `TaskUpdate` each define a nearly identical `validate_title` field validator in `app/models.py` (unlike tag validation, which was already consolidated into a shared `_normalize_tags` helper).
+- **Fixed status-transition set.** Only `ToDo → InProgress`, `InProgress → Done`, and `Done → InProgress` are allowed; a same-status "transition" is explicitly rejected (422), not treated as a no-op.
+- **`GET /tasks` result ordering is not a documented contract.** [VERIFY] It currently reflects dict insertion order rather than an explicit sort.
+- **`.env.example` declares `PORT` and `APP_ENV`, and `python-dotenv` is a dependency, but nothing in `app/` currently reads either variable.** [VERIFY] The server's host/port are only set via the `uvicorn`/Docker command-line flags shown above.
+- **CI runs tests only.** It does not build or verify the Docker image; Docker usage is verified manually.
+- **No linter or formatter is configured.**
+- Not production-ready: no auth, no database, no deployment configuration — see the overview above.
 
 ---
 
-## Running the Test Suite
+## Documentation and Decisions
 
-Run all backend tests:
+There is no dedicated `docs/decisions/` directory. The closest existing technical decision record is:
 
-```bash
-python -m pytest -v
-```
+- [`docs/midcourse/mini-adr.md`](docs/midcourse/mini-adr.md) — architecture decision record for the due-dates and tags features.
 
----
+Additional project documentation lives in `docs/midcourse/`:
 
-## AI-Assisted Development Workflow
-
-This project was developed using an AI-assisted workflow.
-
-AI tools were used to:
-
-- Inspect the existing architecture
-- Plan feature implementation
-- Generate implementation suggestions
-- Generate automated tests
-- Review completed work
-- Verify feature completeness
-
-All AI-generated code and recommendations were reviewed, tested, and validated before being accepted.
-
-The complete AI interaction history is documented in:
-
-- `docs/midcourse/prompt-log.md`
-
----
-
-## Project Documentation
-
-Additional project documentation is available in the `docs/midcourse/` directory:
-
-- `user-stories.md`
-- `mini-adr.md`
-- `prompt-log.md`
-- `verification.md`
-- `reflection.md`
+- [`user-stories.md`](docs/midcourse/user-stories.md)
+- [`prompt-log.md`](docs/midcourse/prompt-log.md) — the full AI interaction history for this project; all AI-generated code and suggestions were reviewed, tested, and validated before being accepted.
+- [`verification.md`](docs/midcourse/verification.md)
+- [`reflection.md`](docs/midcourse/reflection.md)
 
 ---
 
