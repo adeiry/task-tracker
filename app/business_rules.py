@@ -31,7 +31,11 @@ def validate_status_transition(current: TaskStatus, new: TaskStatus) -> None:
             "transition" is always rejected, not treated as a no-op), or
             if ``(current, new)`` is not one of the pairs in
             ``VALID_TRANSITIONS`` (``ToDo``→``InProgress``,
-            ``InProgress``→``Done``, ``Done``→``InProgress``).
+            ``InProgress``→``Done``, ``Done``→``InProgress``). The
+            response body is ``{"detail": "<string>"}`` — a plain
+            string, not the list-of-objects shape FastAPI's OpenAPI
+            schema declares for automatic (Pydantic) 422 validation
+            errors on this same route.
 
     Example:
         validate_status_transition(TaskStatus.TODO, TaskStatus.IN_PROGRESS)

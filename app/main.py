@@ -121,7 +121,12 @@ def create_task(payload: TaskCreate) -> TaskResponse:
     return storage.add_task(payload)
 
 
-@app.get("/tasks/{task_id}", response_model=TaskResponse, tags=["tasks"])
+@app.get(
+    "/tasks/{task_id}",
+    response_model=TaskResponse,
+    tags=["tasks"],
+    responses={404: {"description": "Task not found"}},
+)
 def get_task(task_id: str) -> TaskResponse:
     """Retrieve a single task by id.
 
@@ -146,7 +151,28 @@ def get_task(task_id: str) -> TaskResponse:
     return task
 
 
-@app.patch("/tasks/{task_id}", response_model=TaskResponse, tags=["tasks"])
+@app.patch(
+    "/tasks/{task_id}",
+    response_model=TaskResponse,
+    tags=["tasks"],
+    responses={
+        404: {"description": "Task not found"},
+        422: {
+            "description": (
+                "Request validation failed, or the requested status "
+                "transition is invalid (including a same-status "
+                "transition). Pydantic validation errors return "
+                "`detail` as a list of objects; status-transition "
+                "errors return `detail` as a plain string."
+            ),
+            "content": {
+                "application/json": {
+                    "schema": {"$ref": "#/components/schemas/HTTPValidationError"}
+                }
+            },
+        },
+    },
+)
 def update_task(task_id: str, payload: TaskUpdate) -> TaskResponse:
     """Partially update a task.
 
@@ -172,7 +198,10 @@ def update_task(task_id: str, payload: TaskUpdate) -> TaskResponse:
         HTTPException: 404 if no task with ``task_id`` exists.
         HTTPException: 422 if ``payload.status`` is provided and the
             transition from the current status is not allowed, including
-            a same-status "transition".
+            a same-status "transition". This 422's body is
+            ``{"detail": "<string>"}``, unlike Pydantic's own validation
+            422s, which return ``{"detail": [...]}`` (a list of error
+            objects). See ``business_rules.validate_status_transition``.
 
     Example:
         PATCH /tasks/3fa85f64-5717-4562-b3fc-2c963f66afa6
@@ -205,7 +234,12 @@ def update_task(task_id: str, payload: TaskUpdate) -> TaskResponse:
     return task
 
 
-@app.delete("/tasks/{task_id}", status_code=status.HTTP_204_NO_CONTENT, tags=["tasks"])
+@app.delete(
+    "/tasks/{task_id}",
+    status_code=status.HTTP_204_NO_CONTENT,
+    tags=["tasks"],
+    responses={404: {"description": "Task not found"}},
+)
 def delete_task(task_id: str) -> None:
     """Delete a task by id.
 
