@@ -229,13 +229,13 @@ Changing `DELETE /tasks/{task_id}` to cascade internally would not alter its cur
 
 ## Repository Grounding Verification
 
-- The plan was based on `AGENTS.md`, `README.md`, the model, route, storage, and business-rule modules under `app/`, the pytest files under `tests/`, and `frontend/index.html`.
-- It reuses confirmed conventions: Pydantic models in `app/models.py`, route handlers in `app/main.py`, UUID4 strings and timezone-aware UTC timestamps in `app/storage.py`, explicit route-level 404 responses, and automatic Pydantic 422 responses.
-- The storage design preserves the existing module-level in-memory approach and explicitly notes restart data loss instead of assuming a database or migration framework.
-- The test plan follows the repository’s function-based pytest naming, shared `TestClient`, `created_task` fixture, and autouse `storage._reset()` isolation pattern.
-- The frontend proposal preserves the existing single-file vanilla JavaScript, modal, `fetch`, loading/error-state, and `escapeHtml()` patterns rather than inventing a framework or build step.
-- The empty `app/api/`, `app/repositories/`, and `app/services/` packages are identified as placeholders, not treated as active layers or used to justify an architectural rewrite.
-- Unsupported product choices—including deletion behavior, ordering, pagination, mutability, authentication, and whitespace handling—remain recommendations, assumptions, or open questions. This makes the design safer than a generic proposal because implementation work would follow confirmed repository constraints while surfacing decisions that still require human approval.
+- This plan is based on the files that actually exist in the repository, including `AGENTS.md`, `README.md`, the modules under `app/`, the pytest files in `tests/`, and `frontend/index.html`.
+- Instead of introducing new patterns, it follows the project's current conventions: Pydantic models stay in `app/models.py`, route handlers stay in `app/main.py`, and IDs and timestamps follow the existing storage implementation.
+- The storage design keeps the current in-memory approach and acknowledges its limitations rather than assuming a database or migration system that does not exist.
+- The testing approach builds on the existing pytest style, shared `TestClient`, `created_task` fixture, and the existing reset pattern.
+- The frontend proposal keeps the current single-file HTML/CSS/JavaScript structure and reuses existing UI patterns instead of introducing a framework or build process.
+- Placeholder folders such as `app/api/`, `app/repositories/`, and `app/services/` are treated as placeholders, not as implemented architecture.
+- Wherever the repository does not provide enough evidence to make a decision, the document clearly marks it as a recommendation, assumption, or open question instead of presenting it as a fact.
 
 # Files read
 
@@ -267,10 +267,10 @@ Changing `DELETE /tasks/{task_id}` to cascade internally would not alter its cur
 
 ## Generic vs Repo-Grounded Codex Comparison
 
-**Biggest difference:** The generic plan described broadly applicable models, nested routes, tests, frontend states, and migration concerns, while the repo-grounded plan ties those ideas to this project’s actual Pydantic models, direct FastAPI handlers, module-level in-memory storage, pytest fixtures, and single-file vanilla JavaScript frontend.
+**Biggest difference:** The generic plan outlined a sensible feature in general, but the repo-grounded plan is built around how this project actually works. It follows the existing models, routes, storage layer, test structure, and frontend instead of assuming a different architecture.
 
-**Plan I would hand to a teammate:** The repo-grounded plan, after the team resolves the documented open questions. It identifies the concrete files and existing helpers involved, preserves current project conventions, and separates confirmed repository facts from recommendations and assumptions.
+**Plan I would hand to a teammate:** I would share the repo-grounded plan because it points to the real files and helpers already used in the project. It also makes it clear which parts are confirmed and which still need a team decision.
 
-**Where the generic plan was still useful:** It provided a sound feature checklist: separate request and response data, nested task-comment routes, validation boundaries, parent-not-found behavior, happy-path and edge-case tests, frontend loading and error states, deletion policy, ordering, and migration questions.
+**Where the generic plan was still useful:** It was helpful for building an initial checklist of things to think about, such as the API shape, validation, testing, frontend states, ordering, and deletion behavior.
 
-**Where repo grounding mattered most:** It established that storage is an in-memory dictionary rather than a database, routes live directly in `app/main.py`, placeholder packages are not implemented architecture, tests depend on the autouse reset fixture, and all frontend changes belong in `frontend/index.html` with no confirmed build or automated browser-test setup.
+**Where repo grounding mattered most:** Reading the repository prevented incorrect assumptions. It confirmed that storage is in memory, routes live directly in `app/main.py`, the placeholder packages are not active architecture, the tests rely on the existing reset fixture, and the frontend is a single `frontend/index.html` file.
