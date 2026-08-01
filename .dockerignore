@@ -1,5 +1,6 @@
 # Version control
 .git
+.github
 .gitignore
 
 # Environment variables / secrets
@@ -40,3 +41,7 @@ Thumbs.db
 # Docker
 Dockerfile
 .dockerignore
+
+# Development-only files
+tests/
+docs/
