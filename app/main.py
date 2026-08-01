@@ -223,7 +223,7 @@ def update_task(task_id: str, payload: TaskUpdate) -> TaskResponse:
             detail=f"Task with id {task_id} not found",
         )
 
-    # validate_status_transition(existing_task.status, payload.status)
+    validate_status_transition(existing_task.status, payload.status)
 
     task = storage.update_task(task_id, payload)
     if task is None:
