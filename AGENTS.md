@@ -226,15 +226,19 @@ For Module 5 work:
 - Treat grading, review, documentation, and governance as the default scope.
 - Use a docs-first approach for proposed changes.
 - Work on one bounded task per Codex thread.
+- Final-course deliverable work must remain on the `final-project` branch.
+- Before recording final evidence, confirm the current branch rather than assuming it.
 - Do not add features unless the user explicitly changes the scope.
 - Do not modify files under `app/` unless the user explicitly approves one specific minimal fix.
 - By default, make documentation changes only under `docs/`.
 - `AGENTS.md` may be created or updated when the user explicitly requests repository-agent guidance.
 - Do not edit tests, frontend code, dependency files, CI configuration, or container configuration without explicit approval.
+- Any approved change under `app/` or `frontend/` must be documented in `docs/final-ai-review.md`, including the reason, files changed, verification performed, and whether the change was suggested by AI.
 - Before editing, state the intended task, files to inspect or change, and whether permission is required.
 - Show proposed governance or documentation content before applying it when the user asks for prior review.
 - Do not run tests or start the app unless the current task authorizes it.
 - Keep changes narrowly scoped and preserve unrelated user work.
+- Do not accept or submit a changed line, command, configuration choice, or AI recommendation unless the user can explain why it belongs in the repository.
 
 ## Evidence and Reporting Rules
 
@@ -254,6 +258,7 @@ When analyzing or reviewing this repository:
 ## Security and Governance
 
 - Never paste, expose, log, or commit secrets, credentials, API keys, tokens, private keys, or sensitive environment values.
+- Never paste, expose, log, or commit real personal data, customer data, production logs, `.env` contents, or confidential business information.
 - Do not open or reproduce secret-bearing files unless the task explicitly requires a safe inspection.
 - Do not run destructive commands such as recursive deletion, hard resets, forced checkouts, or destructive database operations.
 - Do not overwrite or discard unrelated user changes.
@@ -270,5 +275,7 @@ Choose verification proportional to the approved task:
 - Python behavior changes: run the smallest relevant test selection first, then consider `pytest -v` if authorized.
 - Frontend changes: inspect `frontend/index.html` and perform browser verification only if authorized.
 - Docker changes: Docker build or run verification requires explicit task scope and may require user approval.
+- When reviewing CI, flag `continue-on-error`, `|| true`, skipped or conditional pytest execution, unpinned or vague Python versions, and missing dependency-installation steps.
+- Do not describe a workflow as successful only because the job is green; confirm that pytest actually ran.
 
 Always report exactly what was and was not verified.
