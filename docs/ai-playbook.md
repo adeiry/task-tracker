@@ -4,7 +4,7 @@
 
 Every AI-assisted task follows the same workflow: **ask, inspect, run, verify with real evidence, then refine**.
 
-I reach for AI to implement an already-specified feature, or to generate boilerplate (docstrings, Dockerfiles, CI workflows, test scaffolding). This project's due dates, tags, filtering, and validation all started this way.
+I reach for AI to implement an already-specified feature or to generate boilerplate (docstrings, Dockerfiles, CI workflows, test scaffolding). During the mid-course project, I used AI to implement the due date, tag, filtering, and validation features, then verified each one against the project requirements before accepting the changes.
 
 My goal is a narrowly scoped, testable change I can verify against my own spec—not an AI-generated decision about what the product should do.
 
