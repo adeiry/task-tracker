@@ -222,6 +222,121 @@ Current limitations remain important: there is no authentication or authorizatio
 
 ---
 
+# Final Project
+
+**Branch reviewed:** `final-project`
+
+## What this submission demonstrates
+
+- The existing Task Tracker application remains within the intended course scope and continues to function correctly.
+- GitHub Actions automatically runs the pytest suite on every push and pull request.
+- The Docker image builds successfully and the container serves `GET /health` with HTTP 200.
+- AI review, security review, governance, and release evidence are documented in the `docs/` directory.
+
+## How to run locally
+
+Clone the repository and enter it:
+
+```bash
+git clone https://github.com/adeiry/task-tracker.git
+cd task-tracker
+```
+
+Create and activate a virtual environment.
+
+**macOS / Linux**
+
+```bash
+python3 -m venv venv
+source venv/bin/activate
+```
+
+**Windows (PowerShell)**
+
+```powershell
+python -m venv venv
+.\venv\Scripts\Activate.ps1
+```
+
+Install dependencies:
+
+```bash
+pip install -r requirements.txt
+```
+
+Start the API:
+
+```bash
+uvicorn app.main:app --reload --port 8000
+```
+
+Open:
+
+```
+http://127.0.0.1:8000/docs
+```
+
+## How to run tests
+
+```bash
+pytest -v
+```
+
+## How to run with Docker
+
+Build the image:
+
+```bash
+docker build -t task-tracker-final .
+```
+
+Run the container:
+
+```bash
+docker run --rm -p 8000:8000 --name task-tracker-final task-tracker-final
+```
+
+Verify the health endpoint:
+
+```bash
+curl http://localhost:8000/health
+```
+
+Expected result:
+
+- HTTP 200
+- JSON containing `status` and `timestamp`
+
+## Evidence files
+
+- `docs/release-evidence.md`
+- `docs/final-ai-review.md`
+- `docs/ai-playbook.md`
+
+## AI assistance summary
+
+AI helped draft or review:
+
+- GitHub Actions CI workflow
+- Docker configuration
+- Project documentation
+- Security review
+- Debugging and verification
+
+I verified the work by:
+
+- Running the full pytest suite
+- Inspecting AI-generated changes before accepting them
+- Building and running the Docker image locally
+- Verifying `/health` returned HTTP 200
+- Manually reviewing documentation for consistency with the implementation
+
+One AI suggestion I rejected or corrected:
+
+- During Module 5, I rejected the AI’s suggestion that reflecting task IDs in JSON 404 responses represented a meaningful security vulnerability. After reviewing the implementation and attack scenario, I classified it as noise because the value is safely JSON-encoded, exposes no sensitive information, and presents no demonstrated practical risk in this project.
+
+---
+
 ## Future Improvements
 
 - Add persistent database storage and migrations.
