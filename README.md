@@ -1,60 +1,93 @@
 # Task Tracker
 
-A lightweight Task Tracker REST API built with **FastAPI** and **Pydantic**, plus a **vanilla JavaScript Kanban board** frontend. This project was developed as part of an AI-Assisted Coding course (through Module 4) to practice REST API design, containerization, CI, automated testing, and AI-assisted development workflows.
+A lightweight Task Tracker REST API built with **FastAPI** and **Pydantic**, plus a self-contained **vanilla HTML, CSS, and JavaScript Kanban board**. The project was developed through all five modules of an AI-Assisted Coding course to practice API design, validation, testing, frontend integration, containerization, continuous integration, security review, and responsible AI-assisted development.
 
-This is a learning project, **not** a production service: there is no authentication, no persistent database (all data lives in memory and resets on restart), and no deployment configuration beyond running the provided Docker image locally.
+This is a learning project, not a production service. It has no authentication or persistent database: tasks are stored in memory and are lost whenever the backend process restarts. CORS is intentionally permissive for local use.
 
 ---
 
 ## Project Overview
 
-### Core Features
+The application provides a FastAPI REST API and a browser-based Kanban interface for managing tasks. The backend uses Python 3.11, FastAPI, Pydantic, and an in-memory store; pytest and HTTPX support automated API testing. The repository also includes a multi-stage Dockerfile for building a container image and a GitHub Actions test workflow.
 
-- Create, view, edit, and delete tasks
-- Kanban board with drag-and-drop status changes
-- Status transitions (To Do → In Progress → Done)
-- Priority levels (Low, Medium, High)
-- Status and priority filtering (`GET /tasks?status=`, `GET /tasks?priority=`)
+### Features
 
-### Due Dates
-
-- Optional due dates for tasks
-- Edit and remove due dates
-- Automatic overdue detection and highlighting
-- Overdue filtering (`GET /tasks?overdue=true|false`)
-
-### Tags
-
-- Multiple tags per task
-- Automatic tag normalization (trimmed, case-insensitive de-duplication)
-- Blank or whitespace-only tags are rejected (HTTP 422), not silently dropped
-- Tag filtering (`GET /tasks?tag=`)
-
-### Extra Improvements
-
-- Frontend delete action (with confirmation) wired to the existing backend `DELETE` endpoint
-- Frontend visual polish (card/button/drag-and-drop states, loading/empty/error states)
+- Create, list, retrieve, partially update, and delete tasks
+- Kanban board with create/edit/delete flows and drag-and-drop status changes
+- Controlled status workflow: `ToDo` → `InProgress` → `Done`, with `Done` → `InProgress` also supported
+- Priority levels: `Low`, `Medium`, and `High`
+- Optional descriptions, assignees, due dates, and tags
+- Overdue detection and frontend highlighting; tasks due today or marked `Done` are not overdue
+- Filtering by status, priority, overdue state, and exact case-insensitive tag match; combined API filters use AND behavior
+- Pydantic validation for titles, enum values, dates, tags, and unknown fields
+- Case-insensitive tag de-duplication while preserving the first occurrence's casing
+- Health-check endpoint
+- Frontend loading, empty, error, confirmation, and failed-drag rollback states
 
 ---
 
 ## Prerequisites
 
-- Python 3.11 (this is what CI and the Docker image actually run; the code's `X | None` type hints require at least Python 3.10 to import)
-- pip
-- Docker, only if you want to run the containerized version (see [Run with Docker](#run-with-docker))
+- Python 3.11 (used by CI and Docker; the code requires at least Python 3.10)
+- `pip`
+- Docker, only for containerized use
 
 ---
 
-## Local Setup
+## Project Structure
 
-Clone the repository:
+```text
+task-tracker/
+├── .github/workflows/ci.yml  # GitHub Actions test workflow
+├── app/
+│   ├── main.py               # FastAPI application and route handlers
+│   ├── models.py             # Pydantic models, enums, defaults, and validation
+│   ├── storage.py            # In-memory task storage and filtering
+│   └── business_rules.py     # Workflow, overdue, and tag-matching rules
+├── frontend/index.html       # Self-contained Kanban UI; no build step
+├── tests/                    # Pytest API tests and manual model verification
+├── docs/                     # Architecture, verification, AI, security, and governance records
+├── Dockerfile
+├── .dockerignore
+├── requirements.txt
+└── README.md
+```
+
+The `app/api/`, `app/repositories/`, and `app/services/` packages are currently empty placeholders; they are not implemented application layers.
+
+---
+
+## API
+
+With the backend running, Swagger UI is available at:
+
+```text
+http://127.0.0.1:8000/docs
+```
+
+The implemented endpoints are:
+
+| Method | Endpoint | Purpose |
+| --- | --- | --- |
+| `GET` | `/health` | Return service liveness and a UTC timestamp |
+| `GET` | `/tasks` | List tasks, optionally filtering by `status`, `priority`, `overdue`, and `tag` |
+| `POST` | `/tasks` | Create a task |
+| `GET` | `/tasks/{task_id}` | Retrieve one task |
+| `PATCH` | `/tasks/{task_id}` | Partially update a task |
+| `DELETE` | `/tasks/{task_id}` | Delete a task |
+
+---
+
+## Running Locally
+
+Clone the repository and enter it:
 
 ```bash
 git clone https://github.com/adeiry/task-tracker.git
 cd task-tracker
 ```
 
-Create and activate a virtual environment:
+Create and activate a virtual environment.
 
 **macOS / Linux**
 
@@ -76,45 +109,33 @@ Install dependencies:
 pip install -r requirements.txt
 ```
 
----
-
-## Run the App Locally
-
-With the virtual environment active, from the repo root:
+Run the API from the repository root:
 
 ```bash
 uvicorn app.main:app --reload --port 8000
 ```
 
-The API is now available at `http://127.0.0.1:8000`.
-
-Verify it's running:
+Open Swagger UI at `http://127.0.0.1:8000/docs`, or check service health with:
 
 ```bash
 curl http://127.0.0.1:8000/health
 ```
 
-Interactive API docs (Swagger UI):
-
-```
-http://127.0.0.1:8000/docs
-```
-
 ### Running the Frontend
 
-Open `frontend/index.html` directly in a browser, with the backend running on port 8000 (the frontend's `BASE_URL` is hardcoded to `http://localhost:8000`).
+With the backend running on port 8000, open `frontend/index.html` directly in a browser. The frontend has no package manager or build command and communicates with `http://localhost:8000`.
 
 ---
 
-## Run Tests
+## Running Tests
 
-With the virtual environment active, from the repo root:
+With the virtual environment active, run the pytest suite from the repository root:
 
 ```bash
 pytest -v
 ```
 
-`tests/verify_a.py` is a separate, ad hoc manual verification script (prints `PASS`/`FAIL` to stdout) for Pydantic model edge cases — it is not part of the pytest suite and is run directly:
+`tests/verify_a.py` is a separate manual Pydantic model-verification script and is not part of the pytest suite:
 
 ```bash
 python tests/verify_a.py
@@ -122,7 +143,7 @@ python tests/verify_a.py
 
 ---
 
-## Run with Docker
+## Docker
 
 Build the image:
 
@@ -136,98 +157,80 @@ Run the container:
 docker run -d --name task-tracker -p 8000:8000 task-tracker
 ```
 
-The API is available at the same URL as the local backend:
+The container exposes port `8000` and runs Uvicorn without development reload mode. The multi-stage `python:3.11-slim` image installs dependencies from locally built wheels and runs the application as the non-root `app` user.
 
-```
-http://127.0.0.1:8000
-```
-
-Verify it's running:
-
-```bash
-curl http://127.0.0.1:8000/health
-```
-
-The image is a multi-stage build (`python:3.11-slim`), installs dependencies from prebuilt wheels, and runs as a non-root `app` user. `CMD` runs `uvicorn app.main:app --host 0.0.0.0 --port 8000` — no `--reload` in the container.
+Secrets are not baked into the image: the Dockerfile copies only `requirements.txt` and `app/`, while `.dockerignore` excludes `.env` files except the placeholder `.env.example`. No credentials or secret values are declared in the Dockerfile.
 
 ---
 
-## CI Workflow
+## Continuous Integration
 
-Defined in `.github/workflows/ci.yml`:
+The GitHub Actions workflow in `.github/workflows/ci.yml` runs automatically on every push and pull request. It checks out the repository, configures Python 3.11, installs the pinned direct dependencies from `requirements.txt`, and runs `pytest -v` on `ubuntu-latest`.
 
-- **Triggers:** every `push` and every `pull_request` (no branch filter configured — this applies to all branches).
-- **Job:** a single `test` job on `ubuntu-latest`.
-- **Steps:** checkout → set up Python `3.11` → `pip install -r requirements.txt` → `pytest -v`.
-
-You can reproduce the CI job locally with the same [Local Setup](#local-setup) and [Run Tests](#run-tests) commands above. CI does not build or run the Docker image, and there is no configured lint/format step.
+CI currently tests the Python application only; it does not run linting, formatting, or a Docker build.
 
 ---
 
-## Project Structure
+## Documentation
 
-```text
-task-tracker/
-├── .github/
-│   └── workflows/
-│       └── ci.yml
-├── app/
-│   ├── main.py            # FastAPI app instance and all route handlers
-│   ├── models.py          # Pydantic models: TaskCreate, TaskUpdate, TaskResponse, enums
-│   ├── storage.py          # In-memory task store
-│   ├── business_rules.py  # Status-transition, overdue, and tag-matching rules
-│   ├── api/                # Empty placeholder package
-│   ├── repositories/       # Empty placeholder package
-│   └── services/           # Empty placeholder package
-├── frontend/
-│   └── index.html          # Self-contained Kanban board UI (no build step)
-├── tests/
-│   ├── conftest.py
-│   ├── test_tasks.py
-│   └── verify_a.py          # Ad hoc manual verification script (not run via pytest)
-├── docs/
-│   └── midcourse/
-│       ├── mini-adr.md
-│       ├── prompt-log.md
-│       ├── reflection.md
-│       ├── user-stories.md
-│       └── verification.md
-├── Dockerfile
-├── .dockerignore
-├── requirements.txt
-├── CLAUDE.md
-└── README.md
-```
+Important project records include:
+
+- [`docs/architecture.md`](docs/architecture.md) — final architecture overview and context-engineering reflection
+- [`docs/midcourse/mini-adr.md`](docs/midcourse/mini-adr.md) — architecture decision record for due dates and tags
+- [`docs/midcourse/user-stories.md`](docs/midcourse/user-stories.md) — feature requirements and corrected AI assumptions
+- [`docs/midcourse/verification.md`](docs/midcourse/verification.md) — backend and browser verification report
+- [`docs/midcourse/prompt-log.md`](docs/midcourse/prompt-log.md) — detailed AI prompt, decision, and verification history
+- [`docs/midcourse/reflection.md`](docs/midcourse/reflection.md) — development reflection and lessons learned
+- [`docs/ai-usage.md`](docs/ai-usage.md) and [`docs/ai-playbook.md`](docs/ai-playbook.md) — AI usage rules and review practices
+- [`docs/security-review.md`](docs/security-review.md) — AI-assisted findings, manual review, reconciliation, and security backlog
+- [`docs/governance-worksheet.md`](docs/governance-worksheet.md) — retrospective on information shared with AI and generated work accepted
+- [`docs/release-evidence.md`](docs/release-evidence.md) — recorded local, CI, and Docker release checks
+- [`docs/decisions/comments-feature-plan.md`](docs/decisions/comments-feature-plan.md) — a design proposal only; comments are not implemented
 
 ---
 
-## Project Conventions and Current Limitations
+## AI-Assisted Development
 
-- **No router/service layer.** All route handlers live in `app/main.py` and call directly into `app/storage.py` and `app/business_rules.py`. `app/api/`, `app/repositories/`, and `app/services/` are empty placeholder packages reserved for future structure but currently unused.
-- **In-memory storage only.** `app/storage.py` holds tasks in a module-level dict keyed by UUID; all data is lost on restart. There is no database.
-- **No authentication.** `CORSMiddleware` is configured with `allow_origins=["*"]` — this is intentionally permissive for local learning use, not appropriate as-is beyond that.
-- **Duplicated title validation.** `TaskCreate` and `TaskUpdate` each define a nearly identical `validate_title` field validator in `app/models.py` (unlike tag validation, which was already consolidated into a shared `_normalize_tags` helper).
-- **Fixed status-transition set.** Only `ToDo → InProgress`, `InProgress → Done`, and `Done → InProgress` are allowed; a same-status "transition" is explicitly rejected (422), not treated as a no-op.
-- **`GET /tasks` result ordering is not a documented contract.** [VERIFY] It currently reflects dict insertion order rather than an explicit sort.
-- **`.env.example` declares `PORT` and `APP_ENV`, and `python-dotenv` is a dependency, but nothing in `app/` currently reads either variable.** [VERIFY] The server's host/port are only set via the `uvicorn`/Docker command-line flags shown above.
-- **CI runs tests only.** It does not build or verify the Docker image; Docker usage is verified manually.
-- **No linter or formatter is configured.**
-- Not production-ready: no auth, no database, no deployment configuration — see the overview above.
+AI was used as a development assistant across planning, implementation, testing, documentation, review, and governance. Generated code and recommendations were inspected, refined, and accepted only after appropriate tests or manual verification. Prompts, decisions, corrections, and verification evidence are recorded in the project documentation for transparency and traceability.
 
 ---
 
-## Documentation and Decisions
+## Security
 
-There is no dedicated `docs/decisions/` directory. The closest existing technical decision record is:
+Implemented practices include:
 
-- [`docs/midcourse/mini-adr.md`](docs/midcourse/mini-adr.md) — architecture decision record for the due-dates and tags features.
+- Pydantic request validation, enum constraints, title limits, tag normalization, and rejection of unknown fields
+- Escaping of task content before the frontend inserts it into HTML
+- Exact versions for direct Python dependencies in `requirements.txt`
+- `.env` exclusion from Git and Docker build context; the Dockerfile contains no secret values
+- Multi-stage Docker build with a non-root runtime user and no Uvicorn reload mode
+- AI-assisted and manual security review with findings graded and prioritized in `docs/security-review.md`
 
-Additional project documentation lives in `docs/midcourse/`:
+Current limitations remain important: there is no authentication or authorization, CORS allows all origins, several input fields and collection sizes are unbounded, storage is unbounded and in-memory, and no dependency or container scanning is configured. Keep the service local or on a trusted network unless these issues are addressed.
 
-- [`user-stories.md`](docs/midcourse/user-stories.md)
-- [`prompt-log.md`](docs/midcourse/prompt-log.md) — the full AI interaction history for this project; all AI-generated code and suggestions were reviewed, tested, and validated before being accepted.
-- [`verification.md`](docs/midcourse/verification.md)
-- [`reflection.md`](docs/midcourse/reflection.md)
+---
+
+## Current Limitations
+
+- Tasks are stored in a module-level dictionary and disappear on restart.
+- There is no authentication, authorization, database, pagination, or production deployment configuration.
+- Route handlers live directly in `app/main.py`; the placeholder API, repository, and service packages are unused.
+- The frontend API URL is fixed to `http://localhost:8000`.
+- Task ordering reflects current dictionary insertion order rather than an explicit API sorting contract.
+- `.env.example` defines `PORT` and `APP_ENV`, but the application does not currently read them.
+- No linter, formatter, or frontend build tool is configured.
+
+---
+
+## Future Improvements
+
+- Add persistent database storage and migrations.
+- Add authentication and per-user authorization before shared deployment.
+- Add pagination, capacity controls, and bounds for descriptions, assignees, and tags.
+- Restrict CORS and make the frontend API URL environment-specific.
+- Introduce clearer router, service, and repository layers if the application grows.
+- Add linting, dependency scanning, container scanning, and Docker verification to CI.
+- Implement task comments after reviewing the existing design proposal.
 
 ---
 
